@@ -161,6 +161,7 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        size = x.size()[2:]
         x = self.relu1(self.bn1(self.conv1(x)))
         x = self.relu2(self.bn2(self.conv2(x)))
         x = self.relu3(self.bn3(self.conv3(x)))
@@ -171,8 +172,10 @@ class ResNet(nn.Module):
         x_dsn = self.dsn(x)
         x = self.layer4(x)
         x = self.head(x)
+        x = F.interpolate(x, size=size, mode='bilinear', align_corners=True)
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
         if self.training:
-            return x_dsn,x
+            return tuple([x_dsn,x])
         else:
             return x
 
