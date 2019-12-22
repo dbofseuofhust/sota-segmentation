@@ -54,20 +54,28 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=1000, stride=8):
-        self.inplanes = 128
+        self.inplanes = 64
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False),
-            norm_layer(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
-            norm_layer(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False))
 
-        self.bn1 = norm_layer(self.inplanes)
+        # self.inplanes = 128
+        # self.conv1 = nn.Sequential(
+        #     nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=False),
+        #     norm_layer(64),
+        #     nn.ReLU(inplace=True),
+        #     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
+        #     norm_layer(64),
+        #     nn.ReLU(inplace=True),
+        #     nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False))
+        # self.bn1 = norm_layer(self.inplanes)
+        # self.relu = nn.ReLU(inplace=True)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 
@@ -126,6 +134,12 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+
+        # x = self.conv1(x)
+        # x = self.bn1(x)
+        # x = self.relu(x)
+        # x = self.maxpool(x)
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -301,7 +315,7 @@ class EMANet(nn.Module):
         #     return pred
 
         if self.training:
-            return preds,mu
+            return tuple([preds,mu])
         else:
             return preds
 

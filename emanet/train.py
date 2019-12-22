@@ -15,6 +15,7 @@ import torchvision.transforms as transform
 from torch.nn.parallel.scatter_gather import gather
 from encoding.nn import CrossEntropy2d
 from torch.nn import DataParallel
+from encoding.nn import SegmentationLosses
 # from encoding.models import DataParallelModel, DataParallelCriterion
 # from encoding.parallel import DataParallelModel, DataParallelCriterion
 from encoding.models.ema_module.nn import patch_replication_callback
@@ -71,13 +72,17 @@ class Trainer():
 
 
         self.model, self.optimizer = model, optimizer
+        self.criterion = SegmentationLosses(se_loss=False, se_weight=0.2,
+                                            aux=False, aux_weight=0.4, weight=None, nclass=self.nclass)
+
         # using cuda
         if args.cuda:
             self.model = DataParallel(self.model).cuda()
             patch_replication_callback(self.model)
+            # self.model = DataParallelModel(self.model).cuda()
+            # self.criterion = DataParallelCriterion(self.criterion).cuda()
 
         self.criterion = CrossEntropy2d()
-        # self.criterion = DataParallelCriterion(self.criterion)
         self.criterion.cuda()
 
         # finetune from a trained model
@@ -123,7 +128,7 @@ class Trainer():
                 image = Variable(image)
                 target = Variable(target)
 
-            preds,mu = self.model(image)
+            preds, mu = self.model(image)
             with torch.no_grad():
                 mu = mu.mean(dim=0, keepdim=True)
                 momentum = args.em_norm
@@ -157,7 +162,8 @@ class Trainer():
             outputs = model(image)
             # print(outputs.size())
             # outputs = gather(outputs, 0, dim=0)
-            pred = outputs
+            # pred = outputs
+            pred = gather(outputs, 0, dim=0)
             target = target.cuda()
             correct, labeled = utils.batch_pix_accuracy(pred.data, target)
             inter, union = utils.batch_intersection_union(pred.data, target, self.nclass)

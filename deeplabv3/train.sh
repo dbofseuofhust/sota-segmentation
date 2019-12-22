@@ -11,6 +11,7 @@
 #     MODEL.PRETRAIN_PATH "('${PRETRAIN}')"  \
 #     OUTPUT_DIR "('${SAVE_DIR}')"
 
+RESUME_FROM=cityscapes/deeplabv3_model/deeplabv3101/checkpoint.pth.tar
  CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
                                     --model  deeplabv3 \
                                     --backbone resnet101 \
@@ -23,7 +24,8 @@
                                     --workers 0 \
                                     --multi-grid \
                                     --multi-dilation 4 8 16 \
-                                    --ohem False
+                                    --ohem False \
+                                    --resume ${RESUME_FROM}
 
 # CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
 #                                    --model  deeplabv3plus \

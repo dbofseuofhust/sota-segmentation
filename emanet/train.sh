@@ -11,7 +11,25 @@
 #     MODEL.PRETRAIN_PATH "('${PRETRAIN}')"  \
 #     OUTPUT_DIR "('${SAVE_DIR}')"
 
- CUDA_VISIBLE_DEVICES=0,1,2,3 python emanet/train.py --dataset cityscapes \
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python emanet/train.py --dataset cityscapes \
+#                                    --model  emanet \
+#                                    --backbone resnet50 \
+#                                    --checkname emanet101  \
+#                                    --base-size 1024 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --stride 8 \
+#                                    --stage-num 3 \
+#                                    --em-norm 0.9
+
+# resume
+RESUME_FROM=cityscapes/emanet_model/emanet101/checkpoint.pth.tar
+CUDA_VISIBLE_DEVICES=0,1,2,3 python emanet/train.py --dataset cityscapes \
                                     --model  emanet \
                                     --backbone resnet50 \
                                     --checkname emanet101  \
@@ -25,5 +43,8 @@
                                     --multi-dilation 4 8 16 \
                                     --stride 8 \
                                     --stage-num 3 \
-                                    --em-norm 0.9
+                                    --em-norm 0.9 \
+                                    --resume ${RESUME_FROM} \
+                                    
+
 
