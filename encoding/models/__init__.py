@@ -13,7 +13,7 @@ from .resnet101_pyramid_oc import get_resnet101_pyramid_oc_dsn
 from .emanet import get_emanet
 from .galdnet import get_galdnet
 from .deeplabv3 import get_deeplabv3
-from .ccnet import get_ccnet
+# from .ccnet import get_ccnet
 
 def get_segmentation_model(name, **kwargs):
     from .fcn import get_fcn
@@ -28,7 +28,7 @@ def get_segmentation_model(name, **kwargs):
         'emanet': get_emanet,
         'galdnet': get_galdnet,
         'deeplabv3': get_deeplabv3,
-        'ccnet': get_ccnet,
+        # 'ccnet': get_ccnet,
     }
     return models[name.lower()](**kwargs)
 
