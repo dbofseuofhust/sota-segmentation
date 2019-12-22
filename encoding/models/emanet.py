@@ -2,7 +2,7 @@ from functools import partial
 import math
 
 import numpy as np
-
+import torch.utils.model_zoo as model_zoo
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -150,17 +150,23 @@ def resnet(n_layers, stride):
         'resnet152': [3, 8, 36, 3],
     }[n_layers]
     pretrained_path = {
-        'resnet50': '/home/dongbin/.cache/torch/checkpoints/resnet50-ebb6acbb.pth',
-        'resnet101': './models/resnet101-2a57e44d.pth',
-        'resnet152': './models/resnet152-0d43d698.pth',
+                'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+                'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+                'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+                'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+                'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
     }[n_layers]
 
     net = ResNet(Bottleneck, layers=layers, stride=stride)
-    state_dict = torch.load(pretrained_path)
-    net.load_state_dict(state_dict, strict=False)
+
+    old_dict = model_zoo.load_url(pretrained_path)
+    model_dict = net.state_dict()
+    old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+    model_dict.update(old_dict)
+    net.load_state_dict(model_dict)
+    print('loading {} imagenet pretrained weights done!'.format(n_layers))
 
     return net
-
 
 class ConvBNReLU(nn.Module):
     '''Module for the Conv-BN-ReLU tuple.'''

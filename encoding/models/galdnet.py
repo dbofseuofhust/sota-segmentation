@@ -11,6 +11,15 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 from torch.nn import BatchNorm2d
+import torch.utils.model_zoo as model_zoo
+
+model_urls = {
+    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+}
 
 class SpatialCGNL(nn.Module):
     """Spatial CGNL block with dot production kernel for image classfication.
@@ -312,6 +321,12 @@ def get_galdnet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = GALDNet(Bottleneck, layers[backbone], datasets[dataset.lower()].NUM_CLASS)
+    old_dict = model_zoo.load_url(model_urls[backbone])
+    model_dict = model.state_dict()
+    old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+    model_dict.update(old_dict)
+    model.load_state_dict(model_dict)
+    print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 # def GALD_res101(num_classes=21):

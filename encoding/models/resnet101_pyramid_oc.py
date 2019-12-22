@@ -21,6 +21,14 @@ from torch.autograd import Variable
 import functools
 affine_par = True
 
+model_urls = {
+    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+}
+
 from .oc_module.resnet_block import conv3x3, Bottleneck
 from .oc_module.pyramid_oc_block import Pyramid_OC_Module
 
@@ -28,20 +36,29 @@ torch_ver = torch.__version__[:3]
 
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes):
-        self.inplanes = 128
+        self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = conv3x3(3, 64, stride=2)
+
+        # self.inplanes = 128
+        # self.conv1 = conv3x3(3, 64, stride=2)
+        # self.bn1 = nn.BatchNorm2d(64)
+        # self.relu1 = nn.ReLU(inplace=False)
+        # self.conv2 = conv3x3(64, 64)
+        # self.bn2 = nn.BatchNorm2d(64)
+        # self.relu2 = nn.ReLU(inplace=False)
+        # self.conv3 = conv3x3(64, 128)
+        # self.bn3 = nn.BatchNorm2d(128)
+        # self.relu3 = nn.ReLU(inplace=False)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        # self.relu = nn.ReLU(inplace=False)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True) # change
+
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
         self.bn1 = nn.BatchNorm2d(64)
-        self.relu1 = nn.ReLU(inplace=False)
-        self.conv2 = conv3x3(64, 64)
-        self.bn2 = nn.BatchNorm2d(64)
-        self.relu2 = nn.ReLU(inplace=False)
-        self.conv3 = conv3x3(64, 128)
-        self.bn3 = nn.BatchNorm2d(128)
-        self.relu3 = nn.ReLU(inplace=False)
+        self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.relu = nn.ReLU(inplace=False)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True) # change
+
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
@@ -80,10 +97,17 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         size = x.size()[2:]
-        x = self.relu1(self.bn1(self.conv1(x)))
-        x = self.relu2(self.bn2(self.conv2(x)))
-        x = self.relu3(self.bn3(self.conv3(x)))
+
+        # x = self.relu1(self.bn1(self.conv1(x)))
+        # x = self.relu2(self.bn2(self.conv2(x)))
+        # x = self.relu3(self.bn3(self.conv3(x)))
+        # x = self.maxpool(x)
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
         x = self.maxpool(x)
+
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -103,4 +127,10 @@ def get_resnet101_pyramid_oc_dsn(dataset='pascal_voc', backbone='resnet50', pret
             root='./pretrain_models', **kwargs):
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = ResNet(Bottleneck,[3, 4, 23, 3], datasets[dataset.lower()].NUM_CLASS)
+    old_dict = model_zoo.load_url(model_urls[backbone])
+    model_dict = model.state_dict()
+    old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+    model_dict.update(old_dict)
+    model.load_state_dict(model_dict)
+    print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model

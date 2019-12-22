@@ -263,6 +263,7 @@ class Deeplabv3Plus(nn.Module):
         old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
         model_dict.update(old_dict)
         self.backbone.load_state_dict(model_dict)
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
 
         self.backbone_layers = self.backbone.get_layers()
 

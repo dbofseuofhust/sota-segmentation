@@ -11,24 +11,10 @@
 #     MODEL.PRETRAIN_PATH "('${PRETRAIN}')"  \
 #     OUTPUT_DIR "('${SAVE_DIR}')"
 
-# CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
-#                                    --model  deeplabv3 \
-#                                    --backbone resnet101 \
-#                                    --checkname deeplabv3101  \
-#                                    --base-size 1024 \
-#                                    --crop-size 768 \
-#                                    --epochs 240 \
-#                                    --batch-size 8 \
-#                                    --lr 0.003 \
-#                                    --workers 0 \
-#                                    --multi-grid \
-#                                    --multi-dilation 4 8 16 \
-#                                    --ohem False
-
  CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
-                                    --model  deeplabv3plus \
+                                    --model  deeplabv3 \
                                     --backbone resnet101 \
-                                    --checkname deeplabv3plus101  \
+                                    --checkname deeplabv3101  \
                                     --base-size 1024 \
                                     --crop-size 768 \
                                     --epochs 240 \
@@ -38,4 +24,18 @@
                                     --multi-grid \
                                     --multi-dilation 4 8 16 \
                                     --ohem False
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
+#                                    --model  deeplabv3plus \
+#                                    --backbone resnet101 \
+#                                    --checkname deeplabv3plus101  \
+#                                    --base-size 1024 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 0 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --ohem False
 
