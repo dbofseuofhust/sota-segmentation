@@ -1,7 +1,12 @@
-import argparse
-import os
-import torch
+###########################################################################
+# Created by: CASIA IVA
+# Email: jliu@nlpr.ia.ac.cn
+# Copyright (c) 2018
+###########################################################################
 
+import os
+import argparse
+import torch
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -11,122 +16,142 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-
-class Parameters():
+class Options():
     def __init__(self):
-        parser = argparse.ArgumentParser(description="Pytorch Segmentation Network")
-        parser.add_argument("--dataset", type=str, default="cityscapes_train",
-                            help="Specify the dataset to use.")
-        parser.add_argument("--batch-size", type=int, default=8,
-                            help="Number of images sent to the network in one step.")
-        parser.add_argument("--data-dir", type=str, default='/teamscratch/msravcshare/yuyua/deeplab_v3/dataset/cityscapes',
-                            help="Path to the directory containing the PASCAL VOC dataset.")
-        parser.add_argument("--data-list", type=str, default='./dataset/list/cityscapes/train.lst',
-                            help="Path to the file listing the images in the dataset.")
-        parser.add_argument("--ignore-label", type=int, default=255,
-                            help="The index of the label to ignore during the training.")
-        parser.add_argument("--input-size", type=str, default='769,769',
-                            help="Comma-separated string with height and width of images.")
-        parser.add_argument("--is-training", action="store_true",
-                            help="Whether to updates the running means and variances during the training.")
-        parser.add_argument("--lr", type=float, default=1e-2,
-                            help="Base learning rate for training with polynomial decay.")
-        parser.add_argument("--momentum", type=float, default=0.9,
-                            help="Momentum component of the optimiser.")
-        parser.add_argument("--not-restore-last", action="store_true",
-                            help="Whether to not restore last (FC) layers.")
-        parser.add_argument("--num-classes", type=int, default=19,
-                            help="Number of classes to predict (including background).")
-        parser.add_argument("--start-iters", type=int, default=0,
-                            help="Number of classes to predict (including background).")
-        parser.add_argument("--num-steps", type=int, default=40000,
-                            help="Number of training steps.")
-        parser.add_argument("--power", type=float, default=0.9,
-                            help="Decay parameter to compute the learning rate.")
-        parser.add_argument("--random-mirror", action="store_true",
-                            help="Whether to randomly mirror the inputs during the training.")
-        parser.add_argument("--random-scale", action="store_true",
-                            help="Whether to randomly scale the inputs during the training.")
-        parser.add_argument("--random-seed", type=int, default=304,
-                            help="Random seed to have reproducible results.")
-        parser.add_argument("--restore-from", type=str, default='./pretrain_model/MS_DeepLab_resnet_pretrained_COCO_init.pth',
-                            help="Where restore model parameters from.")
-        parser.add_argument("--save-num-images", type=int, default=2,
-                            help="How many images to save.")
-        parser.add_argument("--save-pred-every", type=int, default=5000,
-                            help="Save summaries and checkpoint every often.")
-        parser.add_argument("--snapshot-dir", type=str, default='./snapshots_psp_ohem_trainval/',
-                            help="Where to save snapshots of the model.")
-        parser.add_argument("--weight-decay", type=float, default=5e-4,
-                            help="Regularisation parameter for L2-loss.")
-        parser.add_argument("--gpu", type=str, default='0',
-                            help="choose gpu device.")
+        parser = argparse.ArgumentParser(description='PyTorch \
+            Segmentation')
+        # model and dataset
+        parser.add_argument('--model', type=str, default='encnet',
+                            help='model name (default: encnet)')
+        parser.add_argument('--backbone', type=str, default='resnet50',
+                            help='backbone name (default: resnet50)')
+        parser.add_argument('--dataset', type=str, default='cityscapes',
+                            help='dataset name (default: pascal12)')
+        parser.add_argument('--data-folder', type=str,
+                            default=os.path.join(os.environ['HOME'], 'data'),
+                            help='training dataset folder (default: \
+                            $(HOME)/data)')
+        parser.add_argument('--workers', type=int, default=16,
+                            metavar='N', help='dataloader threads')
+        parser.add_argument('--base-size', type=int, default=608,
+                            help='base image size')
+        parser.add_argument('--crop-size', type=int, default=576,
+                            help='crop image size')
+        # training hyper params
 
+        # galdnet
         parser.add_argument("--ohem-thres", type=float, default=0.6,
                             help="choose the samples with correct probability underthe threshold.")
         parser.add_argument("--ohem-thres1", type=float, default=0.8,
                             help="choose the threshold for easy samples.")
         parser.add_argument("--ohem-thres2", type=float, default=0.5,
                             help="choose the threshold for hard samples.")
-        parser.add_argument("--use-weight", type=str2bool, nargs='?', const=True,
-                            help="whether use the weights to solve the unbalance problem between classes.")
-        parser.add_argument("--use-val", type=str2bool, nargs='?', const=True,
-                            help="choose whether to use the validation set to train.")
-        parser.add_argument("--use-extra", type=str2bool, nargs='?', const=True,
-                            help="choose whether to use the extra set to train.")
         parser.add_argument("--ohem", type=str2bool, nargs='?', const=True,
                             help="choose whether conduct ohem.")
         parser.add_argument("--ohem-keep", type=int, default=100000,
                             help="choose the samples with correct probability underthe threshold.")
-        parser.add_argument("--network", type=str, default='resnet101',
-                            help="choose which network to use.")
-        parser.add_argument("--method", type=str, default='base',
-                            help="choose method to train.")
-        parser.add_argument("--reduce", action="store_false",
-                            help="Whether to use reduce when computing the cross entropy loss.")
         parser.add_argument("--ohem-single", action="store_true",
                             help="Whether to use hard sample mining only for the last supervision.")
-        parser.add_argument("--use-parallel", action="store_true",
-                            help="Whether to the default parallel.")
         parser.add_argument("--dsn-weight", type=float, default=0.4,
                             help="choose the weight of the dsn supervision.")
-        parser.add_argument("--pair-weight", type=float, default=1,
-                            help="choose the weight of the pair-wise loss supervision.")
-        parser.add_argument('--seed', default=304, type=int, help='manual seed')
 
-        parser.add_argument("--output-path", type=str, default='./seg_output_eval_set',
-                        help="Path to the segmentation map prediction.")
-        parser.add_argument("--store-output", type=str, default='False',
-                        help="whether store the predicted segmentation map.")
-        parser.add_argument("--use-flip", type=str, default='False',
-                        help="whether use test-stage flip.")
-        parser.add_argument("--use-ms", type=str, default='False',
-                        help="whether use test-stage multi-scale crop.")
-        parser.add_argument("--predict-choice", type=str, default='whole',
-                        help="crop: choose the training crop size; whole: choose the whole picture; step: choose to predict the images with multiple steps.")
-        parser.add_argument("--whole-scale", type=str, default='1',
-                        help="choose the scale to rescale whole picture.")
+        parser.add_argument('--aux', action='store_true', default= False,
+                            help='Auxilary Loss')
+        parser.add_argument('--se-loss', action='store_true', default= False,
+                            help='Semantic Encoding Loss SE-loss')
+        parser.add_argument('--epochs', type=int, default=None, metavar='N',
+                            help='number of epochs to train (default: auto)')
+        parser.add_argument('--start_epoch', type=int, default=0,
+                            metavar='N', help='start epochs (default:0)')
+        parser.add_argument('--batch-size', type=int, default=None,
+                            metavar='N', help='input batch size for \
+                            training (default: auto)')
+        parser.add_argument('--test-batch-size', type=int, default=None,
+                            metavar='N', help='input batch size for \
+                            testing (default: same as batch size)')
+        # optimizer params
+        parser.add_argument('--lr', type=float, default=None, metavar='LR',
+                            help='learning rate (default: auto)')
+        parser.add_argument('--lr-scheduler', type=str, default='poly',
+                            help='learning rate scheduler (default: poly)')
+        parser.add_argument('--lr-step', type=int, default=None,
+                            help='lr step to change lr')
+        parser.add_argument('--momentum', type=float, default=0.9,
+                            metavar='M', help='momentum (default: 0.9)')
+        parser.add_argument('--weight-decay', type=float, default=1e-4,
+                            metavar='M', help='w-decay (default: 1e-4)')
+        # cuda, seed and logging
+        parser.add_argument('--no-cuda', action='store_true', default=
+                            False, help='disables CUDA training')
+        parser.add_argument('--seed', type=int, default=1, metavar='S',
+                            help='random seed (default: 1)')
+        parser.add_argument('--log-root', type=str,
+                            default='./cityscapes/log', help='set a log path folder')
 
-        parser.add_argument("--start-epochs", type=int, default=0,
-                            help="Number of the initial staring epochs.")
-        parser.add_argument("--end-epochs", type=int, default=120,
-                            help="Number of the overall training epochs.")
-        parser.add_argument("--save-epoch", type=int, default=20,
-                            help="Save summaries and checkpoint every often.")
-        parser.add_argument("--criterion", type=str, default='ce',
-                        help="Specify the specific criterion/loss functions to use.")
+        # checking point
+        parser.add_argument('--resume', type=str, default=None,
+                            help='put the path to resuming file if needed')
+        parser.add_argument('--resume-dir', type=str, default=None,
+                            help='put the path to resuming dir if needed')
+        parser.add_argument('--checkname', type=str, default='default',
+                            help='set the checkpoint name')
+        parser.add_argument('--model-zoo', type=str, default=None,
+                            help='evaluating on model zoo model')
+        # finetuning pre-trained models
+        parser.add_argument('--ft', action='store_true', default= False,
+                            help='finetuning on a different dataset')
+        parser.add_argument('--ft-resume', type=str, default=None,
+                            help='put the path of trained model to finetune if needed ')
+        parser.add_argument('--pre-class', type=int, default=None,
+                            help='num of pre-trained classes \
+                            (default: None)')
+
+        # evaluation option
+        parser.add_argument('--ema', action='store_true', default= False,
+                            help='using EMA evaluation')
         parser.add_argument('--eval', action='store_true', default= False,
                             help='evaluating mIoU')
-        parser.add_argument("--fix-lr", action="store_true",
-                            help="choose whether to fix the learning rate.")
-        parser.add_argument('--log-file', type=str, default= "",
-                            help='the output file to redirect the ouput.')
-
-        parser.add_argument("--use-normalize-transform", action="store_true",
-                            help="Whether to the transform the input data by mean, variance.")
+        parser.add_argument('--no-val', action='store_true', default= False,
+                            help='skip validation during training')
+        # test option
+        parser.add_argument('--test-folder', type=str, default=None,
+                            help='path to test image folder')
+        parser.add_argument('--multi-scales',action="store_true", default=False,
+                            help="testing scale,default:1.0(single scale)")
+        # multi grid dilation option
+        parser.add_argument("--multi-grid", action="store_true", default=False,
+                            help="use multi grid dilation policy")
+        parser.add_argument('--multi-dilation', nargs='+', type=int, default=None,
+                            help="multi grid dilation list")
+        parser.add_argument('--scale', action='store_false', default=True,
+                           help='choose to use random scale transform(0.75-2),default:multi scale')
+        # the parser
         self.parser = parser
-
 
     def parse(self):
         args = self.parser.parse_args()
+        args.cuda = not args.no_cuda and torch.cuda.is_available()
+        # default settings for epochs, batch_size and lr
+        if args.epochs is None:
+            epoches = {
+                'pascal_voc': 50,
+                'pascal_aug': 50,
+                'pcontext': 80,
+                'ade20k': 160,
+                'cityscapes': 180,
+            }
+            args.epochs = epoches[args.dataset.lower()]
+        if args.batch_size is None:
+            args.batch_size = 4 * torch.cuda.device_count()
+        if args.test_batch_size is None:
+            args.test_batch_size = args.batch_size
+        if args.lr is None:
+            lrs = {
+                'pascal_voc': 0.0001,
+                'pascal_aug': 0.001,
+                'pcontext': 0.001,
+                'ade20k': 0.01,
+                'cityscapes': 0.01,
+            }
+            args.lr = lrs[args.dataset.lower()] / 8 * args.batch_size
         return args
