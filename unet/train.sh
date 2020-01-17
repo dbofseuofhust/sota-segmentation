@@ -524,25 +524,45 @@
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
 
-DATASET=monusac
-CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
-                                    --model saltnet \
-                                    --backbone atrous_se_resnext50_32x4d \
-                                    --checkname exp4-saltnet-nohycol-atrous_se_resnext50_32x4d-warmup10-lr002-bsize512-csize768-rs-aspp-dilated  \
-                                    --base-size 512 \
-                                    --crop-size 768 \
-                                    --epochs 240 \
-                                    --batch-size 8 \
-                                    --lr 0.02 \
-                                    --workers 2 \
-                                    --multi-grid \
-                                    --multi-dilation 4 8 16 \
-                                    --warmup True \
-                                    --warmup-epoch 10 \
-                                    --mutil-steps 80,140 \
-                                    --warmup-factor 0.1 \
-                                    --warmup-method linear \
-                                    --log-root ${DATASET}
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model saltnet \
+#                                    --backbone atrous_se_resnext50_32x4d \
+#                                    --checkname exp4-saltnet-nohycol-atrous_se_resnext50_32x4d-warmup10-lr002-bsize512-csize768-rs-aspp-dilated  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model saltnet \
+#                                    --backbone atrous_se_resnet50 \
+#                                    --checkname exp4-saltnet-nohycol-atrous_se_resnet50-warmup10-lr002-bsize512-csize768-rs-aspp-dilated  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
 
 #DATASET=monusac
 #CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
@@ -563,6 +583,26 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
 #                                    --warmup-factor 0.1 \
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
+
+DATASET=monusac
+CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+                                    --model  deeplabv3plus \
+                                    --backbone atrous_se_resnet50 \
+                                    --checkname exp4-deeplabv3plus_sr50-warmup10-lr002-bsize512-csize768-rs  \
+                                    --base-size 512 \
+                                    --crop-size 768 \
+                                    --epochs 240 \
+                                    --batch-size 8 \
+                                    --lr 0.02 \
+                                    --workers 2 \
+                                    --multi-grid \
+                                    --multi-dilation 4 8 16 \
+                                    --warmup True \
+                                    --warmup-epoch 10 \
+                                    --mutil-steps 80,140 \
+                                    --warmup-factor 0.1 \
+                                    --warmup-method linear \
+                                    --log-root ${DATASET}
 
 #DATASET=monusac
 #CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \

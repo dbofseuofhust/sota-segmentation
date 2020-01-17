@@ -11,6 +11,12 @@ model_urls = {
     'atrous_resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
     'atrous_resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
     'atrous_resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    'atrous_se_resnet50': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet50-ce0d4300.pth',
+    'atrous_se_resnet101': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet101-7e38fcc6.pth',
+    'atrous_se_resnet152': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnet152-d17c99b7.pth',
+    'atrous_se_resnext50_32x4d': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth',
+    'atrous_se_resnext101_32x4d': 'http://data.lip6.fr/cadene/pretrainedmodels/se_resnext101_32x4d-3b2fe3d8.pth',
+    'atrous_senet154': 'http://data.lip6.fr/cadene/pretrainedmodels/senet154-c7b49a05.pth'
 }
 
 def conv3x3(in_planes, out_planes, stride=1, atrous=1):
@@ -104,12 +110,14 @@ class Deeplabv3Plus(BaseNet):
                 nn.init.constant_(m.bias, 0)
 
         self.backbone = self.pretrained
-        old_dict = model_zoo.load_url(model_urls[backbone])
-        model_dict = self.backbone.state_dict()
-        old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
-        model_dict.update(old_dict)
-        self.backbone.load_state_dict(model_dict)
-        print('loading {} imagenet pretrained weights done!'.format(backbone))
+
+        if not 'atrous_se' in backbone:
+            old_dict = model_zoo.load_url(model_urls[backbone])
+            model_dict = self.backbone.state_dict()
+            old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
+            model_dict.update(old_dict)
+            self.backbone.load_state_dict(model_dict)
+            print('loading {} imagenet pretrained weights done!'.format(backbone))
 
         self.backbone_layers = self.backbone.get_layers()
 

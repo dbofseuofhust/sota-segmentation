@@ -1174,7 +1174,7 @@ def get_saltnet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     }
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
-    if backbone in ['atrous_resnet50','se_resnext50_32x4d','resnet50','atrous_se_resnext50_32x4d']:
+    if backbone in ['atrous_resnet50','se_resnext50_32x4d','resnet50','atrous_se_resnext50_32x4d','atrous_se_resnet50']:
         model = SaltNetSRX50(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root, **kwargs)
         # model = SaltNetSRX50(6, backbone=backbone, root=root, **kwargs)
     elif backbone == 'resnet34':

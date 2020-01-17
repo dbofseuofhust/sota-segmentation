@@ -137,8 +137,8 @@ class SEBottleneck(Bottleneck):
     """
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,atrous=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, groups, reduction, stride=1,
+                 downsample=None,atrous=1):
         super(SEBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes * 2, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes * 2)
@@ -163,8 +163,8 @@ class SEResNetBottleneck(Bottleneck):
     """
     expansion = 4
 
-    def __init__(self, inplanes, planes, groups, reduction, stride=1,atrous=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, groups, reduction, stride=1,
+                 downsample=None,atrous=1):
         super(SEResNetBottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False,
                                stride=stride)
@@ -334,6 +334,11 @@ class SENet_Atrous(nn.Module):
         self.dropout = nn.Dropout(dropout_p) if dropout_p is not None else None
         self.last_linear = nn.Linear(512 * block.expansion, num_classes)
 
+        self.layers = []
+
+    def get_layers(self):
+        return self.layers
+
     def _make_layer(self, block, planes, blocks, groups, reduction, stride=1,atrous=None,
                     downsample_kernel_size=1, downsample_padding=0):
         downsample = None
@@ -362,11 +367,16 @@ class SENet_Atrous(nn.Module):
         return nn.Sequential(*layers)
 
     def features(self, x):
+        self.layers = []
         x = self.layer0(x)
         x = self.layer1(x)
+        self.layers.append(x)
         x = self.layer2(x)
+        self.layers.append(x)
         x = self.layer3(x)
+        self.layers.append(x)
         x = self.layer4(x)
+        self.layers.append(x)
         return x
 
     def logits(self, x):
@@ -379,7 +389,6 @@ class SENet_Atrous(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = self.logits(x)
         return x
 
 def initialize_pretrained_model(model, num_classes, settings):
