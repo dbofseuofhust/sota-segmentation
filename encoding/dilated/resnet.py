@@ -292,3 +292,5 @@ def resnet152(pretrained=False, root='~/.encoding/models', **kwargs):
         model.load_state_dict(torch.load(
             './pretrain_models/resnet152-b121ed2d.pth'), strict=False)
     return model
+
+

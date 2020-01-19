@@ -97,16 +97,33 @@
 #                                           --lr 0.003 \
 #                                           --log-root ${DATASET}
 
+#DATASET=monusac
+#MODEL=saltnet
+#CKPT=${DATASET}/${MODEL}_model/exp4-saltnet-nohycol-se_resnext50_32x4d-warmup10-lr002-bsize512-csize768-rs
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/inference.py --dataset ${DATASET} \
+#                                           --model ${MODEL} \
+#                                           --resume-dir ${CKPT}/ \
+#                                           --base-size 512 \
+#                                           --crop-size 768 \
+#                                           --workers 1 \
+#                                           --backbone se_resnext50_32x4d \
+#                                           --multi-grid \
+#                                           --multi-dilation 4 8 16 \
+#                                           --epochs 240  \
+#                                           --batch-size 8 \
+#                                           --lr 0.003 \
+#                                           --log-root ${DATASET}
+
 DATASET=monusac
-MODEL=saltnet
-CKPT=${DATASET}/${MODEL}_model/exp4-saltnet-nohycol-se_resnext50_32x4d-warmup10-lr002-bsize512-csize768-rs
-CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/inference.py --dataset ${DATASET} \
+MODEL=deeplabv3plus
+CKPT=${DATASET}/${MODEL}_model/exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize768-rs-cj
+CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/inference.py --dataset ${DATASET} \
                                            --model ${MODEL} \
                                            --resume-dir ${CKPT}/ \
                                            --base-size 512 \
                                            --crop-size 768 \
                                            --workers 1 \
-                                           --backbone se_resnext50_32x4d \
+                                           --backbone atrous_resnet50 \
                                            --multi-grid \
                                            --multi-dilation 4 8 16 \
                                            --epochs 240  \

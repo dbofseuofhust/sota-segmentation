@@ -20,6 +20,7 @@ from ..dilated import se_resnet152
 from ..dilated import resnext101_ibn_a,resnet50_ibn_a,senet154,se_resnext101_32x4d,se_resnext50_32x4d
 from ..dilated import get_atrous_resnet,get_atrous_senet
 from ..utils import batch_pix_accuracy, batch_intersection_union
+from ..dilated import get_xception
 
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
 
@@ -53,6 +54,8 @@ class BaseNet(nn.Module):
                                                multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif 'atrous_resnet' in backbone:
             self.pretrained = get_atrous_resnet(backbone=backbone.split('_')[1],output_stride=16)
+        elif backbone == 'xception' or backbone == 'Xception':
+            self.pretrained = get_xception()
         elif 'atrous_se' in backbone:
             self.pretrained = get_atrous_senet(backbone=backbone)
 

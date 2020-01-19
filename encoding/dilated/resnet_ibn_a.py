@@ -204,3 +204,15 @@ def resnet152_ibn_a(pretrained=False, **kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
     return model
+
+if __name__ == '__main__':
+
+    model = resnet50_ibn_a()
+    img = torch.randn(2,3,768,768)
+    out = model(img)
+
+    # ori
+    # torch.Size([2, 256, 192, 192])
+    # torch.Size([2, 512, 96, 96])
+    # torch.Size([2, 1024, 48, 48])
+    # torch.Size([2, 2048, 24, 24])

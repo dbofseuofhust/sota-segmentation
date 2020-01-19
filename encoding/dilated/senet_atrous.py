@@ -392,6 +392,7 @@ class SENet_Atrous(nn.Module):
         return x
 
 def initialize_pretrained_model(model, num_classes, settings):
+    print('loading imagenet pretrained weights done!')
     assert num_classes == settings['num_classes'], \
         'num_classes should be {}, but is {}'.format(
             settings['num_classes'], num_classes)
@@ -401,7 +402,6 @@ def initialize_pretrained_model(model, num_classes, settings):
     model.input_range = settings['input_range']
     model.mean = settings['mean']
     model.std = settings['std']
-
 
 def senet154(num_classes=1000, pretrained='imagenet',atrous=None, os=16):
     model = SENet_Atrous(SEBottleneck, [3, 8, 36, 3], groups=64, reduction=16,

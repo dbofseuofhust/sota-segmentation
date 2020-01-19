@@ -15,7 +15,7 @@ import torchvision.transforms as transform
 from torch.nn.parallel.scatter_gather import gather
 
 import encoding.utils as utils
-from encoding.nn import SegmentationLosses
+from encoding.nn import SegmentationLosses,SegmentationOHEMLosses
 from encoding.nn import SegmentationMultiLosses
 from encoding.parallel import DataParallelModel, DataParallelCriterion
 # from encoding.nn.loss import CriterionDSN, CriterionOhemDSN
@@ -74,8 +74,13 @@ class Trainer():
                     momentum=args.momentum,
                     weight_decay=args.weight_decay)
 
-        self.criterion = SegmentationLosses(se_loss=False, se_weight=0.2,
-                 aux=True, aux_weight=0.4, weight=None, nclass=self.nclass)
+        if args.ohem:
+            print('using ohem loss.')
+            self.criterion = SegmentationOHEMLosses(se_loss=False, se_weight=0.2,
+                                                aux=True, aux_weight=0.4, weight=None, nclass=self.nclass)
+        else:
+            self.criterion = SegmentationLosses(se_loss=False, se_weight=0.2,
+                                                aux=True, aux_weight=0.4, weight=None, nclass=self.nclass)
 
         self.model, self.optimizer = model, optimizer
         # using cuda

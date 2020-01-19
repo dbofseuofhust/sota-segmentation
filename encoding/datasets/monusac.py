@@ -23,7 +23,7 @@ class MonusacSegmentation(BaseDataset):
     NUM_CLASS = 5
 
     # /data/deeplearning/ead2020_semantic_segmentation
-    def __init__(self, root='/data/Dataset/ISBI/MoNuSAC', split='train',
+    def __init__(self, root='/share/Dataset/ISBI/MoNuSAC', split='train',
                  mode=None, transform=None, target_transform=None, base_size=768, crop_size=1024, **kwargs):
         super(MonusacSegmentation, self).__init__(
             root, split, mode, transform, target_transform, base_size=base_size, crop_size=crop_size, **kwargs)

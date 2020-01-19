@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..models import BaseNet
+# from ..models import BaseNet
 import torchvision
 
 class Conv2dReLU(nn.Module):
@@ -421,12 +421,12 @@ class CenterBlock(DecoderBlock):
     def forward(self, x):
         return self.block(x)
 
-class Unet(BaseNet):
+class Unet(nn.Module):
 
     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(Unet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-        # super(Unet, self).__init__()
+        # super(Unet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        super(Unet, self).__init__()
 
         if center:
             channels = encoder_channels[0]
@@ -447,6 +447,7 @@ class Unet(BaseNet):
             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
             )
 
+        print(in_channels[0], out_channels[0])
         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
@@ -454,7 +455,7 @@ class Unet(BaseNet):
         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
 
-        self.initialize()
+        # self.initialize()
 
     def compute_channels(self, encoder_channels, decoder_channels):
         channels = [
@@ -479,6 +480,9 @@ class Unet(BaseNet):
         x_dsn = self.dsn(x3)
         x4 = self.pretrained.layer4(x3)
 
+        print(x1.size(),x2.size(),x3.size(),x4.size())
+        # torch.Size([2, 256, 64, 64]) torch.Size([2, 512, 32, 32]) torch.Size([2, 1024, 16, 16]) torch.Size([2, 2048, 8, 8])
+
         x = [x4, x3, x2, x1, x0]
 
         encoder_head = x[0]
@@ -500,754 +504,754 @@ class Unet(BaseNet):
         else:
             return x
 
-class SCSEUnet(BaseNet):
-
-    def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(SCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-            )
-
-        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-        self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]])
-        x = self.layer3([x, skips[2]])
-        x = self.layer4([x, skips[3]])
-        x = self.layer5([x, None])
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn,x])
-        else:
-            return x
-
-class DANetHead(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DANetHead, self).__init__()
-        inter_channels = in_channels // 4
-        self.conv5a = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-                                    nn.BatchNorm2d(inter_channels))
-
-        self.conv5c = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-                                    nn.BatchNorm2d(inter_channels))
-
-        self.sa = PAM_Module(inter_channels)
-        self.sc = CAM_Module(inter_channels)
-        self.conv51 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-                                    nn.BatchNorm2d(inter_channels))
-        self.conv52 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-                                    nn.BatchNorm2d(inter_channels))
-
-        self.conv8 = nn.Sequential(nn.Dropout2d(0.1, False), nn.Conv2d(inter_channels, out_channels, 1))
-
-    def forward(self, x):
-
-        feat1 = self.conv5a(x)
-        sa_feat = self.sa(feat1)
-        sa_conv = self.conv51(sa_feat)
-
-        feat2 = self.conv5c(x)
-        sc_feat = self.sc(feat2)
-        sc_conv = self.conv52(sc_feat)
-
-        feat_sum = sa_conv + sc_conv
-        x = self.conv8(feat_sum)
-
-        return x
-
-class DAHeadUnet(BaseNet):
-
-    def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(DAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add danet attention
-        self.head = DANetHead(encoder_channels[0],encoder_channels[0])
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-            )
-
-        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]])
-        x = self.layer3([x, skips[2]])
-        x = self.layer4([x, skips[3]])
-        x = self.layer5([x, None])
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class OCHead(nn.Module):
-    def __init__(self, in_ch, nclass, oc_arch, norm_layer=nn.BatchNorm2d, **kwargs):
-        super(OCHead, self).__init__()
-        if oc_arch == 'base':
-            self.context = nn.Sequential(
-                nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
-                norm_layer(512),
-                nn.ReLU(True),
-                BaseOCModule(512, 512, 256, 256, scales=([1]), norm_layer=norm_layer, **kwargs))
-        elif oc_arch == 'pyramid':
-            self.context = nn.Sequential(
-                nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
-                norm_layer(512),
-                nn.ReLU(True),
-                PyramidOCModule(512, 512, 256, 512, scales=([1, 2, 3, 6]), norm_layer=norm_layer, **kwargs))
-        elif oc_arch == 'asp':
-            self.context = ASPOCModule(in_ch, 512, 256, 512, norm_layer=norm_layer, **kwargs)
-        else:
-            raise ValueError("Unknown OC architecture!")
-
-        self.out = nn.Conv2d(512, nclass, 1)
-
-    def forward(self, x):
-        x = self.context(x)
-        return self.out(x)
-
-class OCHeadUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(OCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.oc_arch = oc_arch
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add ocnet attention
-        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]])
-        x = self.layer3([x, skips[2]])
-        x = self.layer4([x, skips[3]])
-        x = self.layer5([x, None])
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class SCSEHCOCHeadUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(SCSEHCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.oc_arch = oc_arch
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add ocnet attention
-        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-                                   nn.ELU(True))
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        outputs = []
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]]) # 128,64,64
-        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-        x = self.layer3([x, skips[2]]) # 64,128,128
-        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-        x = self.layer4([x, skips[3]]) # 32,256,256
-        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-        x = self.layer5([x, None]) # 16,512,512
-        outputs.append(x)
-        x = torch.cat(outputs,dim=1)
-        x = self.hc(x)
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class HCOCHeadUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(HCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.oc_arch = oc_arch
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add ocnet attention
-        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-                                   nn.ELU(True))
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        outputs = []
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]]) # 128,64,64
-        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-        x = self.layer3([x, skips[2]]) # 64,128,128
-        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-        x = self.layer4([x, skips[3]]) # 32,256,256
-        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-        x = self.layer5([x, None]) # 16,512,512
-        outputs.append(x)
-        x = torch.cat(outputs,dim=1)
-        x = self.hc(x)
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class SCSEOCHeadUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.oc_arch = oc_arch
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add ocnet attention
-        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]])
-        x = self.layer3([x, skips[2]])
-        x = self.layer4([x, skips[3]])
-        x = self.layer5([x, None])
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class HCSCSEUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(HCSCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        # ad Hyper Column part
-        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-                                   nn.ELU(True))
-        self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-
-        outputs = []
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]]) # 128,64,64
-        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-        x = self.layer3([x, skips[2]]) # 64,128,128
-        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-        x = self.layer4([x, skips[3]]) # 32,256,256
-        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-        x = self.layer5([x, None]) # 16,512,512
-        outputs.append(x)
-        x = torch.cat(outputs,dim=1)
-        x = self.hc(x)
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
-
-class OCDAHeadUnet(BaseNet):
-
-    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        super(OCDAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-
-        if center:
-            channels = encoder_channels[0]
-            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-        else:
-            self.center = None
-
-        self.oc_arch = oc_arch
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-
-        in_channels = self.compute_channels(encoder_channels, decoder_channels)
-        out_channels = decoder_channels
-
-        # add ocnet attention
-        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-
-        self.layer1 = DecoderDAHeadBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-        self.layer2 = DecoderDAHeadBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-        self.layer3 = DecoderDAHeadBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-        self.layer4 = DecoderDAHeadBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-        self.layer5 = DecoderDAHeadBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
-
-        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-
-        self.initialize()
-
-    def compute_channels(self, encoder_channels, decoder_channels):
-        channels = [
-            encoder_channels[0] + encoder_channels[1],
-            encoder_channels[2] + decoder_channels[0],
-            encoder_channels[3] + decoder_channels[1],
-            encoder_channels[4] + decoder_channels[2],
-            0 + decoder_channels[3],
-        ]
-        return channels
-
-    def forward(self, x):
-        size = x.size()[2:]
-
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
-        x1 = self.pretrained.layer1(x1)
-        x2 = self.pretrained.layer2(x1)
-        x3 = self.pretrained.layer3(x2)
-        x_dsn = self.dsn(x3)
-        x4 = self.pretrained.layer4(x3)
-
-        x = [x4, x3, x2, x1, x0]
-
-        encoder_head = x[0]
-        skips = x[1:]
-
-        if self.center:
-            encoder_head = self.center(encoder_head)
-        encoder_head = self.head(encoder_head)
-
-        x = self.layer1([encoder_head, skips[0]])
-        x = self.layer2([x, skips[1]])
-        x = self.layer3([x, skips[2]])
-        x = self.layer4([x, skips[3]])
-        x = self.layer5([x, None])
-        x = self.final_conv(x)
-
-        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-        if self.training:
-            return tuple([x_dsn, x])
-        else:
-            return x
+# class SCSEUnet(BaseNet):
+#
+#     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(SCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#             )
+#
+#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]])
+#         x = self.layer3([x, skips[2]])
+#         x = self.layer4([x, skips[3]])
+#         x = self.layer5([x, None])
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn,x])
+#         else:
+#             return x
+#
+# class DANetHead(nn.Module):
+#     def __init__(self, in_channels, out_channels):
+#         super(DANetHead, self).__init__()
+#         inter_channels = in_channels // 4
+#         self.conv5a = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+#                                     nn.BatchNorm2d(inter_channels))
+#
+#         self.conv5c = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+#                                     nn.BatchNorm2d(inter_channels))
+#
+#         self.sa = PAM_Module(inter_channels)
+#         self.sc = CAM_Module(inter_channels)
+#         self.conv51 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+#                                     nn.BatchNorm2d(inter_channels))
+#         self.conv52 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+#                                     nn.BatchNorm2d(inter_channels))
+#
+#         self.conv8 = nn.Sequential(nn.Dropout2d(0.1, False), nn.Conv2d(inter_channels, out_channels, 1))
+#
+#     def forward(self, x):
+#
+#         feat1 = self.conv5a(x)
+#         sa_feat = self.sa(feat1)
+#         sa_conv = self.conv51(sa_feat)
+#
+#         feat2 = self.conv5c(x)
+#         sc_feat = self.sc(feat2)
+#         sc_conv = self.conv52(sc_feat)
+#
+#         feat_sum = sa_conv + sc_conv
+#         x = self.conv8(feat_sum)
+#
+#         return x
+#
+# class DAHeadUnet(BaseNet):
+#
+#     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(DAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add danet attention
+#         self.head = DANetHead(encoder_channels[0],encoder_channels[0])
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#             )
+#
+#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]])
+#         x = self.layer3([x, skips[2]])
+#         x = self.layer4([x, skips[3]])
+#         x = self.layer5([x, None])
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class OCHead(nn.Module):
+#     def __init__(self, in_ch, nclass, oc_arch, norm_layer=nn.BatchNorm2d, **kwargs):
+#         super(OCHead, self).__init__()
+#         if oc_arch == 'base':
+#             self.context = nn.Sequential(
+#                 nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
+#                 norm_layer(512),
+#                 nn.ReLU(True),
+#                 BaseOCModule(512, 512, 256, 256, scales=([1]), norm_layer=norm_layer, **kwargs))
+#         elif oc_arch == 'pyramid':
+#             self.context = nn.Sequential(
+#                 nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
+#                 norm_layer(512),
+#                 nn.ReLU(True),
+#                 PyramidOCModule(512, 512, 256, 512, scales=([1, 2, 3, 6]), norm_layer=norm_layer, **kwargs))
+#         elif oc_arch == 'asp':
+#             self.context = ASPOCModule(in_ch, 512, 256, 512, norm_layer=norm_layer, **kwargs)
+#         else:
+#             raise ValueError("Unknown OC architecture!")
+#
+#         self.out = nn.Conv2d(512, nclass, 1)
+#
+#     def forward(self, x):
+#         x = self.context(x)
+#         return self.out(x)
+#
+# class OCHeadUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(OCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.oc_arch = oc_arch
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add ocnet attention
+#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]])
+#         x = self.layer3([x, skips[2]])
+#         x = self.layer4([x, skips[3]])
+#         x = self.layer5([x, None])
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class SCSEHCOCHeadUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(SCSEHCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.oc_arch = oc_arch
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add ocnet attention
+#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+#                                    nn.ELU(True))
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         outputs = []
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]]) # 128,64,64
+#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+#         x = self.layer3([x, skips[2]]) # 64,128,128
+#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+#         x = self.layer4([x, skips[3]]) # 32,256,256
+#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+#         x = self.layer5([x, None]) # 16,512,512
+#         outputs.append(x)
+#         x = torch.cat(outputs,dim=1)
+#         x = self.hc(x)
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class HCOCHeadUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(HCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.oc_arch = oc_arch
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add ocnet attention
+#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+#                                    nn.ELU(True))
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         outputs = []
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]]) # 128,64,64
+#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+#         x = self.layer3([x, skips[2]]) # 64,128,128
+#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+#         x = self.layer4([x, skips[3]]) # 32,256,256
+#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+#         x = self.layer5([x, None]) # 16,512,512
+#         outputs.append(x)
+#         x = torch.cat(outputs,dim=1)
+#         x = self.hc(x)
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class SCSEOCHeadUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.oc_arch = oc_arch
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add ocnet attention
+#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]])
+#         x = self.layer3([x, skips[2]])
+#         x = self.layer4([x, skips[3]])
+#         x = self.layer5([x, None])
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class HCSCSEUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(HCSCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         # ad Hyper Column part
+#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+#                                    nn.ELU(True))
+#         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#
+#         outputs = []
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]]) # 128,64,64
+#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+#         x = self.layer3([x, skips[2]]) # 64,128,128
+#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+#         x = self.layer4([x, skips[3]]) # 32,256,256
+#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+#         x = self.layer5([x, None]) # 16,512,512
+#         outputs.append(x)
+#         x = torch.cat(outputs,dim=1)
+#         x = self.hc(x)
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
+#
+# class OCDAHeadUnet(BaseNet):
+#
+#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
+#         super(OCDAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+#
+#         if center:
+#             channels = encoder_channels[0]
+#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+#         else:
+#             self.center = None
+#
+#         self.oc_arch = oc_arch
+#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+#
+#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
+#         out_channels = decoder_channels
+#
+#         # add ocnet attention
+#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+#
+#         self.layer1 = DecoderDAHeadBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+#         self.layer2 = DecoderDAHeadBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+#         self.layer3 = DecoderDAHeadBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+#         self.layer4 = DecoderDAHeadBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+#         self.layer5 = DecoderDAHeadBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+#
+#         self.dsn = nn.Sequential(
+#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.ReLU(),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+#         )
+#
+#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+#
+#         self.initialize()
+#
+#     def compute_channels(self, encoder_channels, decoder_channels):
+#         channels = [
+#             encoder_channels[0] + encoder_channels[1],
+#             encoder_channels[2] + decoder_channels[0],
+#             encoder_channels[3] + decoder_channels[1],
+#             encoder_channels[4] + decoder_channels[2],
+#             0 + decoder_channels[3],
+#         ]
+#         return channels
+#
+#     def forward(self, x):
+#         size = x.size()[2:]
+#
+#         x0 = self.pretrained.conv1(x)
+#         x0 = self.pretrained.bn1(x0)
+#         x0 = self.pretrained.relu(x0)
+#         x1 = self.pretrained.maxpool(x0)
+#         x1 = self.pretrained.layer1(x1)
+#         x2 = self.pretrained.layer2(x1)
+#         x3 = self.pretrained.layer3(x2)
+#         x_dsn = self.dsn(x3)
+#         x4 = self.pretrained.layer4(x3)
+#
+#         x = [x4, x3, x2, x1, x0]
+#
+#         encoder_head = x[0]
+#         skips = x[1:]
+#
+#         if self.center:
+#             encoder_head = self.center(encoder_head)
+#         encoder_head = self.head(encoder_head)
+#
+#         x = self.layer1([encoder_head, skips[0]])
+#         x = self.layer2([x, skips[1]])
+#         x = self.layer3([x, skips[2]])
+#         x = self.layer4([x, skips[3]])
+#         x = self.layer5([x, None])
+#         x = self.final_conv(x)
+#
+#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+#         if self.training:
+#             return tuple([x_dsn, x])
+#         else:
+#             return x
 
 def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
             root='./pretrain_models', **kwargs):
@@ -1271,9 +1275,9 @@ def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     }
 
     # infer number of classes
-    from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
-    model = Unet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone],**kwargs)
-    # model = Unet(nclass=6, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone], **kwargs)
+    # from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
+    # model = Unet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone],**kwargs)
+    model = Unet(nclass=6, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone], **kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1557,6 +1561,6 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
 
 if __name__ == '__main__':
 
-    model = get_unet(backbone='resnet50')
-    img = torch.randn(2,3,512,512)
+    model = get_unet(backbone='resnet50').cuda()
+    img = torch.randn(2,3,256,256).cuda()
     out = model(img)

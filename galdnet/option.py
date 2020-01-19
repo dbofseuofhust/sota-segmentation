@@ -60,7 +60,7 @@ class Options():
                             help="choose the threshold for easy samples.")
         parser.add_argument("--ohem-thres2", type=float, default=0.5,
                             help="choose the threshold for hard samples.")
-        parser.add_argument("--ohem", type=str2bool, nargs='?', const=True,
+        parser.add_argument("--ohem", type=str2bool, nargs='?', const=False,
                             help="choose whether conduct ohem.")
         parser.add_argument("--ohem-keep", type=int, default=100000,
                             help="choose the samples with correct probability underthe threshold.")

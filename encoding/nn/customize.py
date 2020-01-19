@@ -15,11 +15,13 @@ from torch.nn import Module, Sequential, Conv2d, ReLU, AdaptiveAvgPool2d, \
     NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter
 from torch.nn import functional as F
 from torch.autograd import Variable
+from torch.autograd import Function
+from torch import nn
 
 torch_ver = torch.__version__[:3]
 
 __all__ = ['GramMatrix', 'SegmentationLosses', 'View', 'Sum', 'Mean',
-           'Normalize', 'PyramidPooling','SegmentationMultiLosses', "CrossEntropy2d", "OhemCrossEntropy2d"]
+           'Normalize', 'PyramidPooling','SegmentationMultiLosses', "CrossEntropy2d", "OhemCrossEntropy2d",'SegmentationOHEMLosses']
 
 class CrossEntropy2d(Module):
 
@@ -79,18 +81,21 @@ class CrossEntropy2d(Module):
         return loss
 
 class OhemCrossEntropy2d(Module):
-    def __init__(self, ignore_label=255, thresh=0.6, min_kept=0, use_weight=True):
+    def __init__(self, ignore_label=255, thresh=0.6, min_kept=0, use_weight=False):
         super(OhemCrossEntropy2d, self).__init__()
         self.ignore_label = ignore_label
         self.thresh = float(thresh)
         self.min_kept = int(min_kept)
-        if use_weight:
-            print("w/ class balance")
-            weight = torch.FloatTensor([0.8373, 0.918, 0.866, 1.0345, 1.0166, 0.9969, 0.9754, 1.0489, 0.8786, 1.0023, 0.9539, 0.9843, 1.1116, 0.9037, 1.0865, 1.0955, 1.0865, 1.1529, 1.0507])
-            self.criterion = torch.nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_label)
-        else:
-            print("w/o class balance")
-            self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_label)
+        # if use_weight:
+        #     print("w/ class balance")
+        #     weight = torch.FloatTensor([0.8373, 0.918, 0.866, 1.0345, 1.0166, 0.9969, 0.9754, 1.0489, 0.8786, 1.0023, 0.9539, 0.9843, 1.1116, 0.9037, 1.0865, 1.0955, 1.0865, 1.1529, 1.0507])
+        #     self.criterion = torch.nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_label)
+        # else:
+        #     print("w/o class balance")
+        #     self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_label)
+
+        print("w/o class balance")
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_label)
 
     def forward(self, predict, target, weight=None):
         """
@@ -130,13 +135,10 @@ class OhemCrossEntropy2d(Module):
                     threshold = pred[threshold_index]
             kept_flag = pred <= threshold
             valid_inds = valid_inds[kept_flag]
-            # print('hard ratio: {} = {} / {} '.format(round(len(valid_inds)/num_valid, 4), len(valid_inds), num_valid))
 
         label = input_label[valid_inds].copy()
         input_label.fill(self.ignore_label)
         input_label[valid_inds] = label
-        valid_flag_new = input_label != self.ignore_label
-        # print(np.sum(valid_flag_new))
         target = Variable(torch.from_numpy(input_label.reshape(target.size())).long().cuda())
 
         return self.criterion(predict, target)
@@ -164,6 +166,7 @@ class SegmentationLosses(CrossEntropyLoss):
                  aux=False, aux_weight=0.2, weight=None,
                  size_average=True, ignore_index=-1):
         super(SegmentationLosses, self).__init__(weight, size_average, ignore_index)
+
         self.se_loss = se_loss
         self.aux = aux
         self.nclass = nclass
@@ -200,6 +203,55 @@ class SegmentationLosses(CrossEntropyLoss):
         tvect = Variable(torch.zeros(batch, nclass))
         for i in range(batch):
             hist = torch.histc(target[i].cpu().data.float(), 
+                               bins=nclass, min=0,
+                               max=nclass-1)
+            vect = hist>0
+            tvect[i] = vect
+        return tvect
+
+class SegmentationOHEMLosses(OhemCrossEntropy2d):
+    """2D Cross Entropy Loss with Auxilary Loss"""
+    def __init__(self, se_loss=False, se_weight=0.2, nclass=-1,
+                 aux=False, aux_weight=0.2, weight=None,
+                 size_average=True, ignore_index=-1):
+        super(SegmentationOHEMLosses, self).__init__(ignore_label=ignore_index, thresh=0.6, min_kept=100000, use_weight=weight)
+
+        self.se_loss = se_loss
+        self.aux = aux
+        self.nclass = nclass
+        self.se_weight = se_weight
+        self.aux_weight = aux_weight
+        self.bceloss = BCELoss(weight, size_average)
+
+    def forward(self, *inputs):
+        if not self.se_loss and not self.aux:
+            return super(SegmentationOHEMLosses, self).forward(*inputs)
+        elif not self.se_loss:
+            pred1, pred2, target = tuple(inputs)
+            loss1 = super(SegmentationOHEMLosses, self).forward(pred1, target)
+            loss2 = super(SegmentationOHEMLosses, self).forward(pred2, target)
+            return loss1 + self.aux_weight * loss2
+        elif not self.aux:
+            pred, se_pred, target = tuple(inputs)
+            se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred)
+            loss1 = super(SegmentationOHEMLosses, self).forward(pred, target)
+            loss2 = self.bceloss(F.sigmoid(se_pred), se_target)
+            return loss1 + self.se_weight * loss2
+        else:
+            pred1, se_pred, pred2, target = tuple(inputs)
+            se_target = self._get_batch_label_vector(target, nclass=self.nclass).type_as(pred1)
+            loss1 = super(SegmentationOHEMLosses, self).forward(pred1, target)
+            loss2 = super(SegmentationOHEMLosses, self).forward(pred2, target)
+            loss3 = self.bceloss(F.sigmoid(se_pred), se_target)
+            return loss1 + self.aux_weight * loss2 + self.se_weight * loss3
+
+    @staticmethod
+    def _get_batch_label_vector(target, nclass):
+        # target is a 3D Variable BxHxW, output is 2D BxnClass
+        batch = target.size(0)
+        tvect = Variable(torch.zeros(batch, nclass))
+        for i in range(batch):
+            hist = torch.histc(target[i].cpu().data.float(),
                                bins=nclass, min=0,
                                max=nclass-1)
             vect = hist>0

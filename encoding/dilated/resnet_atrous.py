@@ -155,6 +155,7 @@ class ResNet_Atrous(nn.Module):
         self.layers.append(x)
         x = self.layer4(x)
         self.layers.append(x)
+
         return x
 
 def get_atrous_resnet(backbone,output_stride):
@@ -171,3 +172,21 @@ def get_atrous_resnet(backbone,output_stride):
     }
 
     return ResNet_Atrous(Bottleneck, layers[backbone], atrous=atrous[backbone], os=output_stride)
+
+if __name__ == '__main__':
+
+    model = get_atrous_resnet('resnet50',16)
+    img = torch.randn(2,3,768,768)
+    out = model(img)
+
+    # ori
+    # torch.Size([2, 256, 192, 192])
+    # torch.Size([2, 512, 96, 96])
+    # torch.Size([2, 1024, 48, 48])
+    # torch.Size([2, 2048, 24, 24])
+
+    # atrous
+    # torch.Size([2, 256, 192, 192])
+    # torch.Size([2, 512, 96, 96])
+    # torch.Size([2, 1024, 48, 48])
+    # torch.Size([2, 2048, 48, 48])

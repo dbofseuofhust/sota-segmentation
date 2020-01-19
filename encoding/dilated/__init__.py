@@ -8,3 +8,4 @@ from .se_resnet_ibn_b import se_resnet50_ibn_b,se_resnet101_ibn_b,se_resnet152_i
 from .senet import se_resnet50,se_resnet101,se_resnet152,se_resnext50_32x4d,se_resnext101_32x4d,senet154
 from .resnet_atrous import get_atrous_resnet
 from .senet_atrous import get_atrous_senet
+from .xception import get_xception

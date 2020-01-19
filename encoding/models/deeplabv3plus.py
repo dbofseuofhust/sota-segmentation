@@ -111,7 +111,7 @@ class Deeplabv3Plus(BaseNet):
 
         self.backbone = self.pretrained
 
-        if not 'atrous_se' in backbone:
+        if not 'atrous_se' in backbone and not 'xception' in backbone:
             old_dict = model_zoo.load_url(model_urls[backbone])
             model_dict = self.backbone.state_dict()
             old_dict = {k: v for k, v in old_dict.items() if (k in model_dict)}
@@ -121,12 +121,20 @@ class Deeplabv3Plus(BaseNet):
 
         self.backbone_layers = self.backbone.get_layers()
 
-        self.dsn = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.Dropout2d(0.1),
-            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-        )
+        if backbone == 'xception' or backbone == 'Xception':
+            self.dsn = nn.Sequential(
+                nn.Conv2d(256, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.Dropout2d(0.1),
+                nn.Conv2d(64, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
+        else:
+            self.dsn = nn.Sequential(
+                nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(512),
+                nn.Dropout2d(0.1),
+                nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
 
     def forward(self, x):
         size = x.size()[2:]

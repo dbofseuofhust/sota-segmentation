@@ -11,21 +11,21 @@
 #     MODEL.PRETRAIN_PATH "('${PRETRAIN}')"  \
 #     OUTPUT_DIR "('${SAVE_DIR}')"
 
- CUDA_VISIBLE_DEVICES=0,1,2,3 python emanet/train.py --dataset cityscapes \
-                                    --model  emanet \
-                                    --backbone resnet50 \
-                                    --checkname emanet101  \
-                                    --base-size 1024 \
-                                    --crop-size 768 \
-                                    --epochs 240 \
-                                    --batch-size 8 \
-                                    --lr 0.003 \
-                                    --workers 2 \
-                                    --multi-grid \
-                                    --multi-dilation 4 8 16 \
-                                    --stride 8 \
-                                    --stage-num 3 \
-                                    --em-norm 0.9
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python emanet/train.py --dataset cityscapes \
+#                                    --model  emanet \
+#                                    --backbone resnet50 \
+#                                    --checkname emanet101  \
+#                                    --base-size 1024 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --stride 8 \
+#                                    --stage-num 3 \
+#                                    --em-norm 0.9
 
 # resume
 #RESUME_FROM=cityscapes/emanet_model/emanet101/checkpoint.pth.tar
@@ -45,6 +45,28 @@
 #                                    --stage-num 3 \
 #                                    --em-norm 0.9 \
 #                                    --resume ${RESUME_FROM} \
-                                    
+
+DATASET=monusac
+CUDA_VISIBLE_DEVICES=4,5,6,7 python emanet/train.py --dataset ${DATASET} \
+                                    --model  emanet \
+                                    --backbone resnet50 \
+                                    --checkname exp4-emanet50-warmup10-lr002-bsize512-csize896-rs-cj  \
+                                    --base-size 512 \
+                                    --crop-size 896 \
+                                    --epochs 240 \
+                                    --batch-size 8 \
+                                    --lr 0.02 \
+                                    --workers 2 \
+                                    --multi-grid \
+                                    --multi-dilation 4 8 16 \
+                                    --warmup True \
+                                    --warmup-epoch 10 \
+                                    --mutil-steps 80,140 \
+                                    --warmup-factor 0.1 \
+                                    --warmup-method linear \
+                                    --log-root ${DATASET} \
+                                    --stride 8 \
+                                    --stage-num 3 \
+                                    --em-norm 0.9
 
 
