@@ -16,10 +16,10 @@ import torch.utils.data as data
 import torchvision.transforms as transform
 import re
 from tqdm import tqdm
-from .base import BaseDataset
+from .base import BaseDataset,BaseDatasetV2
 
 
-class EADSegmentation(BaseDataset):
+class EADSegmentation(BaseDatasetV2):
     BASE_DIR = 'ead'
     NUM_CLASS = 6
 
@@ -43,8 +43,11 @@ class EADSegmentation(BaseDataset):
         img = Image.open(self.images[index]).convert('RGB')
         if self.mode == 'vis':
             if self.transform is not None:
+                # to keep the same scale
                 w, h = img.size
-                img = img.resize((self.crop_size, self.crop_size), Image.BILINEAR)
+                scale = self.crop_size / self.base_size
+                ow, oh = int(scale * w), int(scale * h)
+                img = img.resize((ow, oh), Image.BILINEAR)
                 img = self.transform(img)
             return img, [os.path.basename(self.images[index]), tuple(w, h)]
 

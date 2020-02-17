@@ -54,7 +54,7 @@ class Trainer():
             if args.cuda else {}
         self.trainloader = data.DataLoader(trainset, batch_size=args.batch_size,
                                            drop_last=True, shuffle=True, **kwargs)
-        self.valloader = data.DataLoader(testset, batch_size=args.batch_size,
+        self.valloader = data.DataLoader(testset, batch_size=1,
                                          drop_last=False, shuffle=False, **kwargs)
         self.nclass = trainset.num_class
         # model
@@ -106,18 +106,34 @@ class Trainer():
             self.best_pred = checkpoint['best_pred']
             self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         # lr scheduler
-        self.scheduler = utils.LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.trainloader), logger=self.logger,
-                                            lr_step=args.lr_step)
+        if args.warmup:
+            assert args.warmup_epoch is not None
+            assert args.mutil_steps is not None
+            assert args.gamma is not None
+            assert args.warmup_factor is not None
+            assert args.warmup_method is not None
+            self.scheduler = utils.WarmupMultiStepLR(self.optimizer, [int(v) for v in args.mutil_steps.split(',')],
+                                                         args.gamma, args.warmup_factor, args.warmup_epoch,
+                                                         args.warmup_method)
+        else:
+            self.scheduler = utils.LR_Scheduler(args.lr_scheduler, args.lr,
+                                                    args.epochs, len(self.trainloader), logger=self.logger,
+                                                    lr_step=args.lr_step)
         self.best_pred = 0.0
+
+        self.warmup = args.warmup
 
     def training(self, epoch):
         train_loss = 0.0
         self.model.train()
         tbar = tqdm(self.trainloader)
 
+        if self.warmup:
+            self.scheduler.step()
+
         for i, (image, target) in enumerate(tbar):
-            self.scheduler(self.optimizer, i, epoch, self.best_pred)
+            if not self.warmup:
+                self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             if torch_ver == "0.3":
                 image = Variable(image)
@@ -128,7 +144,11 @@ class Trainer():
             self.optimizer.step()
             train_loss += loss.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
-        self.logger.info('Train loss: %.3f' % (train_loss / (i + 1)))
+        if self.warmup:
+            self.logger.info('\n=>Epoches %i, learning rate = %.4f, previous best = %.4f' % (
+            epoch, self.scheduler.get_lr()[0], self.best_pred))
+        else:
+            self.logger.info('Train loss: %.3f' % (train_loss / (i + 1)))
 
         if self.args.no_val:
             # save checkpoint every 10 epoch
@@ -150,7 +170,8 @@ class Trainer():
             outputs = model(image)
             # outputs = gather(outputs, 0, dim=0)
             # pred = outputs[0]
-            pred = gather(outputs, 0, dim=0)
+            pred = outputs[0] # for bs=1
+            # pred = gather(outputs, 0, dim=0) # for bs>1
             target = target.cuda()
             correct, labeled = utils.batch_pix_accuracy(pred.data, target)
             inter, union = utils.batch_intersection_union(pred.data, target, self.nclass)

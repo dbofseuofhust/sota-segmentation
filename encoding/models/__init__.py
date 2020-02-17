@@ -17,6 +17,8 @@ from .deeplabv3plus import get_deeplabv3plus
 # from .ccnet import get_ccnet
 from .saltnet import get_saltnet
 from .unet import get_unet,get_daheadunet,get_hcocheadunet,get_hcscseunet,get_ocheadunet,get_scsehcocheadunet,get_scseocheadunet,get_scseunet
+from .unet import get_scsedaheadunet
+from .cpn import get_cpn
 
 def get_segmentation_model(name, **kwargs):
     from .fcn import get_fcn
@@ -34,9 +36,11 @@ def get_segmentation_model(name, **kwargs):
         'deeplabv3plus': get_deeplabv3plus,
         'saltnet': get_saltnet,
         # 'ccnet': get_ccnet,
+        'cpn': get_cpn,
 
         'unet': get_unet,
         'daheadunet': get_daheadunet,
+        'scsedaheadunet': get_scsedaheadunet,
         'hcocheadunet': get_hcocheadunet,
         'hcscseunet': get_hcscseunet,
         'ocheadunet': get_ocheadunet,

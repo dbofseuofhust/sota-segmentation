@@ -53,6 +53,9 @@ class Options():
         parser.add_argument('--warmup-method', type=str, default='linear',
                             help='choose from (linear or constant).')
 
+        parser.add_argument('--is-dilated', type=bool, default=False,
+                            help='whether to use dilated conv.')
+
         # galdnet
         parser.add_argument("--ohem-thres", type=float, default=0.6,
                             help="choose the samples with correct probability underthe threshold.")

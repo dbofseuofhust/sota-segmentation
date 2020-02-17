@@ -16,11 +16,12 @@ from torch.nn.parallel.parallel_apply import parallel_apply
 from torch.nn.parallel.scatter_gather import scatter
 
 from ..dilated import resnet34,resnet50,resnet101,resnet152
-from ..dilated import se_resnet152
+from ..dilated import se_resnet152,se_resnet101
 from ..dilated import resnext101_ibn_a,resnet50_ibn_a,senet154,se_resnext101_32x4d,se_resnext50_32x4d
 from ..dilated import get_atrous_resnet,get_atrous_senet
 from ..utils import batch_pix_accuracy, batch_intersection_union
 from ..dilated import get_xception
+from ..dilated import resnet101_ibn_a
 
 up_kwargs = {'mode': 'bilinear', 'align_corners': True}
 
@@ -67,16 +68,34 @@ class BaseNet(nn.Module):
             baseWidth = 4
             cardinality = 32
             self.pretrained = resnext101_ibn_a(baseWidth, cardinality)
+        elif backbone == 'resnet101_ibn_a':
+            self.pretrained = resnet101_ibn_a(pretrained=True, dilated=dilated,
+                                             norm_layer=norm_layer, root=root,
+                                             multi_grid=multi_grid, multi_dilation=multi_dilation)
+        elif backbone == 'resnet50_ibn_a':
+            self.pretrained = resnet50_ibn_a(pretrained=True, dilated=dilated,
+                                       norm_layer=norm_layer, root=root,
+                                       multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'se_resnet152':
-            self.pretrained = se_resnet152()
+            self.pretrained = se_resnet152(pretrained=True, dilated=dilated,
+                                        norm_layer=norm_layer, root=root,
+                                        multi_grid=multi_grid, multi_dilation=multi_dilation)
+        elif backbone == 'se_resnet101':
+            self.pretrained = se_resnet101(pretrained=True, dilated=dilated,
+                                        norm_layer=norm_layer, root=root,
+                                        multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'senet154':
             self.pretrained = senet154()
         elif backbone == 'resnet34':
             self.pretrained = resnet34(pretrained=True)
+        elif backbone in ['resnext101_32x4d','resnext101_64x4d', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = None
         else:
             raise RuntimeError('unknown backbone: {}'.format(backbone))
         # bilinear upsample options
         self._up_kwargs = up_kwargs
+
+        self.backbone = backbone
 
     def initialize(self):
         for m in self.modules():
@@ -87,10 +106,14 @@ class BaseNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def base_forward(self, x):
-        x = self.pretrained.conv1(x)
-        x = self.pretrained.bn1(x)
-        x = self.pretrained.relu(x)
-        x = self.pretrained.maxpool(x)
+
+        if 'se_' in self.backbone:
+            x = self.pretrained.layer0(x)
+        else:
+            x = self.pretrained.conv1(x)
+            x = self.pretrained.bn1(x)
+            x = self.pretrained.relu(x)
+            x = self.pretrained.maxpool(x)
         c1 = self.pretrained.layer1(x)
         c2 = self.pretrained.layer2(c1)
         c3 = self.pretrained.layer3(c2)

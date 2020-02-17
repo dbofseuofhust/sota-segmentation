@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: torch-encoding
-Version: 0.4.5
+Version: 0.4.5+98ee4e2
 Summary: PyTorch Encoding Package
 Home-page: https://github.com/zhanghang1989/PyTorch-Encoding
 Author: Hang Zhang

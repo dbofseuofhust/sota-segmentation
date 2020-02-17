@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from ..models import BaseNet
+from ..models import BaseNet
 import torchvision
+import pretrainedmodels
 
 class Conv2dReLU(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, padding=0,
@@ -39,16 +40,19 @@ class ConvBNReLU(nn.Module):
         return x
 
 class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, use_batchnorm=True):
+    def __init__(self, in_channels, out_channels, use_batchnorm=True,is_dilated=False):
         super().__init__()
         self.block = nn.Sequential(
             Conv2dReLU(in_channels, out_channels, kernel_size=3, padding=1, use_batchnorm=use_batchnorm),
             Conv2dReLU(out_channels, out_channels, kernel_size=3, padding=1, use_batchnorm=use_batchnorm),
         )
 
+        self.is_dilated = is_dilated
+
     def forward(self, x):
         x, skip = x
-        x = F.interpolate(x, scale_factor=2, mode='bilinear')
+        if not self.is_dilated:
+            x = F.interpolate(x, scale_factor=2, mode='bilinear')
         if skip is not None:
             x = torch.cat([x, skip], dim=1)
         x = self.block(x)
@@ -383,7 +387,7 @@ class ASPOCModule(nn.Module):
         return out
 
 class DecoderDAHeadBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, use_batchnorm=True):
+    def __init__(self, in_channels, out_channels, use_batchnorm=True,is_dilated=False):
         super().__init__()
         self.block = nn.Sequential(
             Conv2dReLU(in_channels, out_channels, kernel_size=3, padding=1, use_batchnorm=use_batchnorm),
@@ -391,16 +395,19 @@ class DecoderDAHeadBlock(nn.Module):
             DANetHead(out_channels,out_channels),
         )
 
+        self.is_dilated = is_dilated
+
     def forward(self, x):
         x, skip = x
-        x = F.interpolate(x, scale_factor=2, mode='bilinear')
+        if not self.is_dilated:
+            x = F.interpolate(x, scale_factor=2, mode='bilinear')
         if skip is not None:
             x = torch.cat([x, skip], dim=1)
         x = self.block(x)
         return x
 
 class DecoderSCSEBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, use_batchnorm=True):
+    def __init__(self, in_channels, out_channels, use_batchnorm=True,is_dilated=False):
         super().__init__()
         self.block = nn.Sequential(
             Conv2dReLU(in_channels, out_channels, kernel_size=3, padding=1, use_batchnorm=use_batchnorm),
@@ -408,9 +415,12 @@ class DecoderSCSEBlock(nn.Module):
             SCSEBlock(out_channels),
         )
 
+        self.is_dilated = is_dilated
+
     def forward(self, x):
         x, skip = x
-        x = F.interpolate(x, scale_factor=2, mode='bilinear')
+        if not self.is_dilated:
+            x = F.interpolate(x, scale_factor=2, mode='bilinear')
         if skip is not None:
             x = torch.cat([x, skip], dim=1)
         x = self.block(x)
@@ -421,12 +431,15 @@ class CenterBlock(DecoderBlock):
     def forward(self, x):
         return self.block(x)
 
-class Unet(nn.Module):
+class Unet(BaseNet):
 
     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-        # super(Unet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-        super(Unet, self).__init__()
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, is_dilated=False,**kwargs):
+        super(Unet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # super(Unet, self).__init__()
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
 
         if center:
             channels = encoder_channels[0]
@@ -434,7 +447,13 @@ class Unet(nn.Module):
         else:
             self.center = None
 
-        self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        if backbone in ['resnet50','resnet101','resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
 
         in_channels = self.compute_channels(encoder_channels, decoder_channels)
         out_channels = decoder_channels
@@ -447,15 +466,14 @@ class Unet(nn.Module):
             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
             )
 
-        print(in_channels[0], out_channels[0])
-        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
+        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
 
-        # self.initialize()
+        self.backbone = backbone
 
     def compute_channels(self, encoder_channels, decoder_channels):
         channels = [
@@ -470,18 +488,21 @@ class Unet(nn.Module):
     def forward(self, x):
         size = x.size()[2:]
 
-        x0 = self.pretrained.conv1(x)
-        x0 = self.pretrained.bn1(x0)
-        x0 = self.pretrained.relu(x0)
-        x1 = self.pretrained.maxpool(x0)
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
         x1 = self.pretrained.layer1(x1)
         x2 = self.pretrained.layer2(x1)
         x3 = self.pretrained.layer3(x2) # [2, 1024, 32, 32]
         x_dsn = self.dsn(x3)
         x4 = self.pretrained.layer4(x3)
-
-        print(x1.size(),x2.size(),x3.size(),x4.size())
-        # torch.Size([2, 256, 64, 64]) torch.Size([2, 512, 32, 32]) torch.Size([2, 1024, 16, 16]) torch.Size([2, 2048, 8, 8])
 
         x = [x4, x3, x2, x1, x0]
 
@@ -504,757 +525,1075 @@ class Unet(nn.Module):
         else:
             return x
 
-# class SCSEUnet(BaseNet):
-#
-#     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(SCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#             )
-#
-#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]])
-#         x = self.layer3([x, skips[2]])
-#         x = self.layer4([x, skips[3]])
-#         x = self.layer5([x, None])
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn,x])
-#         else:
-#             return x
-#
-# class DANetHead(nn.Module):
-#     def __init__(self, in_channels, out_channels):
-#         super(DANetHead, self).__init__()
-#         inter_channels = in_channels // 4
-#         self.conv5a = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-#                                     nn.BatchNorm2d(inter_channels))
-#
-#         self.conv5c = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-#                                     nn.BatchNorm2d(inter_channels))
-#
-#         self.sa = PAM_Module(inter_channels)
-#         self.sc = CAM_Module(inter_channels)
-#         self.conv51 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-#                                     nn.BatchNorm2d(inter_channels))
-#         self.conv52 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-#                                     nn.BatchNorm2d(inter_channels))
-#
-#         self.conv8 = nn.Sequential(nn.Dropout2d(0.1, False), nn.Conv2d(inter_channels, out_channels, 1))
-#
-#     def forward(self, x):
-#
-#         feat1 = self.conv5a(x)
-#         sa_feat = self.sa(feat1)
-#         sa_conv = self.conv51(sa_feat)
-#
-#         feat2 = self.conv5c(x)
-#         sc_feat = self.sc(feat2)
-#         sc_conv = self.conv52(sc_feat)
-#
-#         feat_sum = sa_conv + sc_conv
-#         x = self.conv8(feat_sum)
-#
-#         return x
-#
-# class DAHeadUnet(BaseNet):
-#
-#     def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(DAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add danet attention
-#         self.head = DANetHead(encoder_channels[0],encoder_channels[0])
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#             )
-#
-#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]])
-#         x = self.layer3([x, skips[2]])
-#         x = self.layer4([x, skips[3]])
-#         x = self.layer5([x, None])
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class OCHead(nn.Module):
-#     def __init__(self, in_ch, nclass, oc_arch, norm_layer=nn.BatchNorm2d, **kwargs):
-#         super(OCHead, self).__init__()
-#         if oc_arch == 'base':
-#             self.context = nn.Sequential(
-#                 nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
-#                 norm_layer(512),
-#                 nn.ReLU(True),
-#                 BaseOCModule(512, 512, 256, 256, scales=([1]), norm_layer=norm_layer, **kwargs))
-#         elif oc_arch == 'pyramid':
-#             self.context = nn.Sequential(
-#                 nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
-#                 norm_layer(512),
-#                 nn.ReLU(True),
-#                 PyramidOCModule(512, 512, 256, 512, scales=([1, 2, 3, 6]), norm_layer=norm_layer, **kwargs))
-#         elif oc_arch == 'asp':
-#             self.context = ASPOCModule(in_ch, 512, 256, 512, norm_layer=norm_layer, **kwargs)
-#         else:
-#             raise ValueError("Unknown OC architecture!")
-#
-#         self.out = nn.Conv2d(512, nclass, 1)
-#
-#     def forward(self, x):
-#         x = self.context(x)
-#         return self.out(x)
-#
-# class OCHeadUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(OCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.oc_arch = oc_arch
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add ocnet attention
-#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]])
-#         x = self.layer3([x, skips[2]])
-#         x = self.layer4([x, skips[3]])
-#         x = self.layer5([x, None])
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class SCSEHCOCHeadUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(SCSEHCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.oc_arch = oc_arch
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add ocnet attention
-#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-#                                    nn.ELU(True))
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         outputs = []
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]]) # 128,64,64
-#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-#         x = self.layer3([x, skips[2]]) # 64,128,128
-#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-#         x = self.layer4([x, skips[3]]) # 32,256,256
-#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-#         x = self.layer5([x, None]) # 16,512,512
-#         outputs.append(x)
-#         x = torch.cat(outputs,dim=1)
-#         x = self.hc(x)
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class HCOCHeadUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(HCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.oc_arch = oc_arch
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add ocnet attention
-#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-#                                    nn.ELU(True))
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         outputs = []
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]]) # 128,64,64
-#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-#         x = self.layer3([x, skips[2]]) # 64,128,128
-#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-#         x = self.layer4([x, skips[3]]) # 32,256,256
-#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-#         x = self.layer5([x, None]) # 16,512,512
-#         outputs.append(x)
-#         x = torch.cat(outputs,dim=1)
-#         x = self.hc(x)
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class SCSEOCHeadUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.oc_arch = oc_arch
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add ocnet attention
-#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]])
-#         x = self.layer3([x, skips[2]])
-#         x = self.layer4([x, skips[3]])
-#         x = self.layer5([x, None])
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class HCSCSEUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(HCSCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         # ad Hyper Column part
-#         self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
-#                                    nn.ELU(True))
-#         self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#
-#         outputs = []
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]]) # 128,64,64
-#         outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
-#         x = self.layer3([x, skips[2]]) # 64,128,128
-#         outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
-#         x = self.layer4([x, skips[3]]) # 32,256,256
-#         outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
-#         x = self.layer5([x, None]) # 16,512,512
-#         outputs.append(x)
-#         x = torch.cat(outputs,dim=1)
-#         x = self.hc(x)
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
-#
-# class OCDAHeadUnet(BaseNet):
-#
-#     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-#                  encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, **kwargs):
-#         super(OCDAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
-#
-#         if center:
-#             channels = encoder_channels[0]
-#             self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
-#         else:
-#             self.center = None
-#
-#         self.oc_arch = oc_arch
-#         self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
-#
-#         in_channels = self.compute_channels(encoder_channels, decoder_channels)
-#         out_channels = decoder_channels
-#
-#         # add ocnet attention
-#         self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
-#
-#         self.layer1 = DecoderDAHeadBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm)
-#         self.layer2 = DecoderDAHeadBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
-#         self.layer3 = DecoderDAHeadBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
-#         self.layer4 = DecoderDAHeadBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
-#         self.layer5 = DecoderDAHeadBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
-#
-#         self.dsn = nn.Sequential(
-#             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-#             nn.BatchNorm2d(512),
-#             nn.ReLU(),
-#             nn.Dropout2d(0.1),
-#             nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
-#         )
-#
-#         self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
-#
-#         self.initialize()
-#
-#     def compute_channels(self, encoder_channels, decoder_channels):
-#         channels = [
-#             encoder_channels[0] + encoder_channels[1],
-#             encoder_channels[2] + decoder_channels[0],
-#             encoder_channels[3] + decoder_channels[1],
-#             encoder_channels[4] + decoder_channels[2],
-#             0 + decoder_channels[3],
-#         ]
-#         return channels
-#
-#     def forward(self, x):
-#         size = x.size()[2:]
-#
-#         x0 = self.pretrained.conv1(x)
-#         x0 = self.pretrained.bn1(x0)
-#         x0 = self.pretrained.relu(x0)
-#         x1 = self.pretrained.maxpool(x0)
-#         x1 = self.pretrained.layer1(x1)
-#         x2 = self.pretrained.layer2(x1)
-#         x3 = self.pretrained.layer3(x2)
-#         x_dsn = self.dsn(x3)
-#         x4 = self.pretrained.layer4(x3)
-#
-#         x = [x4, x3, x2, x1, x0]
-#
-#         encoder_head = x[0]
-#         skips = x[1:]
-#
-#         if self.center:
-#             encoder_head = self.center(encoder_head)
-#         encoder_head = self.head(encoder_head)
-#
-#         x = self.layer1([encoder_head, skips[0]])
-#         x = self.layer2([x, skips[1]])
-#         x = self.layer3([x, skips[2]])
-#         x = self.layer4([x, skips[3]])
-#         x = self.layer5([x, None])
-#         x = self.final_conv(x)
-#
-#         x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
-#         if self.training:
-#             return tuple([x_dsn, x])
-#         else:
-#             return x
+class SCSEUnet(BaseNet):
+
+    def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
+        super(SCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
+
+        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+        self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]])
+        x = self.layer3([x, skips[2]])
+        x = self.layer4([x, skips[3]])
+        x = self.layer5([x, None])
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn,x])
+        else:
+            return x
+
+class DANetHead(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(DANetHead, self).__init__()
+        inter_channels = in_channels // 4
+        self.conv5a = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(inter_channels))
+
+        self.conv5c = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(inter_channels))
+
+        self.sa = PAM_Module(inter_channels)
+        self.sc = CAM_Module(inter_channels)
+        self.conv51 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(inter_channels))
+        self.conv52 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+                                    nn.BatchNorm2d(inter_channels))
+
+        self.conv8 = nn.Sequential(nn.Dropout2d(0.1, False), nn.Conv2d(inter_channels, out_channels, 1))
+
+    def forward(self, x):
+
+        feat1 = self.conv5a(x)
+        sa_feat = self.sa(feat1)
+        sa_conv = self.conv51(sa_feat)
+
+        feat2 = self.conv5c(x)
+        sc_feat = self.sc(feat2)
+        sc_conv = self.conv52(sc_feat)
+
+        feat_sum = sa_conv + sc_conv
+        x = self.conv8(feat_sum)
+
+        return x
+
+class DAHeadUnet(BaseNet):
+
+    def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
+        super(DAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add danet attention
+        self.head = DANetHead(encoder_channels[0],encoder_channels[0])
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
+
+        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]])
+        x = self.layer3([x, skips[2]])
+        x = self.layer4([x, skips[3]])
+        x = self.layer5([x, None])
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class SCSEDAHeadUnet(BaseNet):
+
+    def __init__(self, nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, is_dilated=False, **kwargs):
+        super(SCSEDAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add danet attention
+        self.head = DANetHead(encoder_channels[0],encoder_channels[0])
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
+
+        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]])
+        x = self.layer3([x, skips[2]])
+        x = self.layer4([x, skips[3]])
+        x = self.layer5([x, None])
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class OCHead(nn.Module):
+    def __init__(self, in_ch, nclass, oc_arch, norm_layer=nn.BatchNorm2d, **kwargs):
+        super(OCHead, self).__init__()
+        if oc_arch == 'base':
+            self.context = nn.Sequential(
+                nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
+                norm_layer(512),
+                nn.ReLU(True),
+                BaseOCModule(512, 512, 256, 256, scales=([1]), norm_layer=norm_layer, **kwargs))
+        elif oc_arch == 'pyramid':
+            self.context = nn.Sequential(
+                nn.Conv2d(in_ch, 512, 3, 1, padding=1, bias=False),
+                norm_layer(512),
+                nn.ReLU(True),
+                PyramidOCModule(512, 512, 256, 512, scales=([1, 2, 3, 6]), norm_layer=norm_layer, **kwargs))
+        elif oc_arch == 'asp':
+            self.context = ASPOCModule(in_ch, 512, 256, 512, norm_layer=norm_layer, **kwargs)
+        else:
+            raise ValueError("Unknown OC architecture!")
+
+        self.out = nn.Conv2d(512, nclass, 1)
+
+    def forward(self, x):
+        x = self.context(x)
+        return self.out(x)
+
+
+class Bottleneck(nn.Module):
+    expansion = 4
+
+    def __init__(self, inplanes, planes, stride=1):
+        super(Bottleneck, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.conv3 = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+class OCHeadUnet(BaseNet):
+
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, is_dilated=False,is_refine=False,**kwargs):
+        super(OCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+        self.is_refine = is_refine
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        self.oc_arch = oc_arch
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(pretrained=True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add ocnet attention
+        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        if self.is_refine:
+            self.laterals = []
+            for v in out_channels:
+                self.laterals.append(self._lateral(v))
+            self.laterals = nn.Sequential(*self.laterals)
+
+            self.final_conv = nn.Sequential(
+                nn.Conv2d(128*5, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Dropout2d(0.1),
+                nn.Conv2d(256, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+            )
+        else:
+            self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def _lateral(self, input_size):
+        layers = []
+        layers.append(nn.Conv2d(input_size, 128,
+            kernel_size=1, stride=1, bias=False))
+        layers.append(nn.BatchNorm2d(128))
+        layers.append(nn.ReLU(inplace=True))
+        layers.append(Bottleneck(128, 128))
+
+        return nn.Sequential(*layers)
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        if self.is_refine:
+            laterals_fms = []
+
+        x = self.layer1([encoder_head, skips[0]])
+        if self.is_refine:
+            laterals_fms.append(self.laterals[0](x))
+        x = self.layer2([x, skips[1]])
+        if self.is_refine:
+            laterals_fms.append(self.laterals[1](x))
+        x = self.layer3([x, skips[2]])
+        if self.is_refine:
+            laterals_fms.append(self.laterals[2](x))
+        x = self.layer4([x, skips[3]])
+        if self.is_refine:
+            laterals_fms.append(self.laterals[3](x))
+        x = self.layer5([x, None])
+        if self.is_refine:
+            laterals_fms.append(self.laterals[4](x))
+
+        if self.is_refine:
+            ups_laterals_fms = []
+            for v in laterals_fms:
+                ups_laterals_fms.append(F.interpolate(v, size=size, mode='bilinear', align_corners=True))
+            x = torch.cat(ups_laterals_fms,dim=1)
+
+        x = self.final_conv(x)
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class SCSEHCOCHeadUnet(BaseNet):
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, is_dilated=False, **kwargs):
+        super(SCSEHCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        self.oc_arch = oc_arch
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add ocnet attention
+        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+                                   nn.ELU(True))
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        outputs = []
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]]) # 128,64,64
+        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+        x = self.layer3([x, skips[2]]) # 64,128,128
+        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+        x = self.layer4([x, skips[3]]) # 32,256,256
+        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+        x = self.layer5([x, None]) # 16,512,512
+        outputs.append(x)
+        x = torch.cat(outputs,dim=1)
+        x = self.hc(x)
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class HCOCHeadUnet(BaseNet):
+
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
+        super(HCOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        self.oc_arch = oc_arch
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add ocnet attention
+        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.layer1 = DecoderBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+                                   nn.ELU(True))
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        outputs = []
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]]) # 128,64,64
+        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+        x = self.layer3([x, skips[2]]) # 64,128,128
+        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+        x = self.layer4([x, skips[3]]) # 32,256,256
+        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+        x = self.layer5([x, None]) # 16,512,512
+        outputs.append(x)
+        x = torch.cat(outputs,dim=1)
+        x = self.hc(x)
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class SCSEOCHeadUnet(BaseNet):
+
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
+        super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        self.oc_arch = oc_arch
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add ocnet attention
+        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]])
+        x = self.layer3([x, skips[2]])
+        x = self.layer4([x, skips[3]])
+        x = self.layer5([x, None])
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class HCSCSEUnet(BaseNet):
+
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True, is_dilated=False,**kwargs):
+        super(HCSCSEUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
+                              'atrous_resnet50', 'atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        self.layer1 = DecoderSCSEBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderSCSEBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderSCSEBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderSCSEBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderSCSEBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        # ad Hyper Column part
+        self.hc = nn.Sequential(nn.Conv2d(out_channels[1]+out_channels[2]+out_channels[3]+out_channels[4], out_channels[4], kernel_size=3, padding=1),
+                                   nn.ELU(True))
+        self.final_conv = nn.Conv2d(out_channels[4], nclass, kernel_size=(1, 1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+
+        outputs = []
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]]) # 128,64,64
+        outputs.append(F.upsample(x, scale_factor=8, mode='bilinear', align_corners=True))
+        x = self.layer3([x, skips[2]]) # 64,128,128
+        outputs.append(F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True))
+        x = self.layer4([x, skips[3]]) # 32,256,256
+        outputs.append(F.upsample(x, scale_factor=2, mode='bilinear', align_corners=True))
+        x = self.layer5([x, None]) # 16,512,512
+        outputs.append(x)
+        x = torch.cat(outputs,dim=1)
+        x = self.hc(x)
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
+
+class OCDAHeadUnet(BaseNet):
+
+    def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
+        super(OCDAHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+        # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a', 'fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
+
+        self.is_dilated = is_dilated
+
+        if center:
+            channels = encoder_channels[0]
+            self.center = CenterBlock(channels, channels, use_batchnorm=use_batchnorm)
+        else:
+            self.center = None
+
+        self.oc_arch = oc_arch
+
+        if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+        elif backbone in ['resnet50_ibn_a','resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101','atrous_resnet50','atrous_resnet152']:
+            print('skip.')
+        else:
+            self.pretrained = pretrainedmodels.__dict__[backbone](num_classes=1000, pretrained='imagenet')
+
+        in_channels = self.compute_channels(encoder_channels, decoder_channels)
+        out_channels = decoder_channels
+
+        # add ocnet attention
+        self.head = OCHead(in_ch=encoder_channels[0],nclass=encoder_channels[0],oc_arch=self.oc_arch)
+
+        self.layer1 = DecoderDAHeadBlock(in_channels[0], out_channels[0], use_batchnorm=use_batchnorm,is_dilated=self.is_dilated)
+        self.layer2 = DecoderDAHeadBlock(in_channels[1], out_channels[1], use_batchnorm=use_batchnorm)
+        self.layer3 = DecoderDAHeadBlock(in_channels[2], out_channels[2], use_batchnorm=use_batchnorm)
+        self.layer4 = DecoderDAHeadBlock(in_channels[3], out_channels[3], use_batchnorm=use_batchnorm)
+        self.layer5 = DecoderDAHeadBlock(in_channels[4], out_channels[4], use_batchnorm=use_batchnorm)
+
+        self.dsn = nn.Sequential(
+            nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout2d(0.1),
+            nn.Conv2d(512, nclass, kernel_size=1, stride=1, padding=0, bias=True)
+        )
+
+        self.final_conv = nn.Conv2d(out_channels[4],nclass,kernel_size=(1,1))
+
+        self.backbone = backbone
+
+        # self.initialize()
+
+    def compute_channels(self, encoder_channels, decoder_channels):
+        channels = [
+            encoder_channels[0] + encoder_channels[1],
+            encoder_channels[2] + decoder_channels[0],
+            encoder_channels[3] + decoder_channels[1],
+            encoder_channels[4] + decoder_channels[2],
+            0 + decoder_channels[3],
+        ]
+        return channels
+
+    def forward(self, x):
+        size = x.size()[2:]
+
+        if 'se_' in self.backbone:
+            x0 = self.pretrained.layer0.conv1(x)
+            x0 = self.pretrained.layer0.bn1(x0)
+            x0 = self.pretrained.layer0.relu1(x0)
+            x1 = self.pretrained.layer0.pool(x0)
+        else:
+            x0 = self.pretrained.conv1(x)
+            x0 = self.pretrained.bn1(x0)
+            x0 = self.pretrained.relu(x0)
+            x1 = self.pretrained.maxpool(x0)
+        x1 = self.pretrained.layer1(x1)
+        x2 = self.pretrained.layer2(x1)
+        x3 = self.pretrained.layer3(x2)
+        x_dsn = self.dsn(x3)
+        x4 = self.pretrained.layer4(x3)
+
+        x = [x4, x3, x2, x1, x0]
+
+        encoder_head = x[0]
+        skips = x[1:]
+
+        if self.center:
+            encoder_head = self.center(encoder_head)
+        encoder_head = self.head(encoder_head)
+
+        x = self.layer1([encoder_head, skips[0]])
+        x = self.layer2([x, skips[1]])
+        x = self.layer3([x, skips[2]])
+        x = self.layer4([x, skips[3]])
+        x = self.layer5([x, None])
+        x = self.final_conv(x)
+
+        x_dsn = F.interpolate(x_dsn, size=size, mode='bilinear', align_corners=True)
+        if self.training:
+            return tuple([x_dsn, x])
+        else:
+            return x
 
 def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-            root='./pretrain_models', **kwargs):
+            root='./pretrain_models', is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1272,12 +1611,26 @@ def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     # from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     # model = Unet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone],**kwargs)
-    model = Unet(nclass=6, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone], **kwargs)
+    model = Unet(nclass=6, backbone=backbone, root=root, encoder_channels=encoder_channels_dict[backbone], is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1288,7 +1641,7 @@ def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     return model
 
 def get_scseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', **kwargs):
+             root='./pretrain_models', is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1306,12 +1659,26 @@ def get_scseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = SCSEUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], **kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1322,7 +1689,7 @@ def get_scseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     return model
 
 def get_hcscseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', **kwargs):
+             root='./pretrain_models', is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1340,12 +1707,26 @@ def get_hcscseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = HCSCSEUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], **kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1356,7 +1737,7 @@ def get_hcscseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     return model
 
 def get_daheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', **kwargs):
+             root='./pretrain_models', is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1374,12 +1755,74 @@ def get_daheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = DAHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], **kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], is_dilated=is_dilated,**kwargs)
+
+    if pretrained:
+        from .model_store import get_model_file
+        model.load_state_dict(torch.load(
+            get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
+            strict=False)
+    print('loading {} imagenet pretrained weights done!'.format(backbone))
+    return model
+
+def get_scsedaheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
+             root='./pretrain_models', is_dilated=False,**kwargs):
+    r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
+    <https://arxiv.org/abs/1809.02983.pdf>`
+    """
+    acronyms = {
+        'pascal_voc': 'voc',
+        'pascal_aug': 'voc',
+        'pcontext': 'pcontext',
+        'ade20k': 'ade',
+        'cityscapes': 'cityscapes',
+    }
+
+    encoder_channels_dict = {
+        'resnet18': (512, 256, 128, 64, 64),
+        'resnet34': (512, 256, 128, 64, 64),
+        'resnet50': (2048, 1024, 512, 256, 64),
+        'resnet101': (2048, 1024, 512, 256, 64),
+        'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
+    }
+
+    # infer number of classes
+    from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
+    model = SCSEDAHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
+                 encoder_channels=encoder_channels_dict[backbone],is_dilated=is_dilated ,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1390,7 +1833,7 @@ def get_daheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     return model
 
 def get_ocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', oc_arch='asp',**kwargs):
+             root='./pretrain_models', oc_arch='asp',is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1408,12 +1851,26 @@ def get_ocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = OCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1424,7 +1881,7 @@ def get_ocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
     return model
 
 def get_scseocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', oc_arch='asp',**kwargs):
+             root='./pretrain_models', oc_arch='asp',is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1442,12 +1899,26 @@ def get_scseocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=Fal
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = SCSEOCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1458,7 +1929,7 @@ def get_scseocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=Fal
     return model
 
 def get_hcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', oc_arch='asp',**kwargs):
+             root='./pretrain_models', oc_arch='asp',is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1476,12 +1947,26 @@ def get_hcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = HCOCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1492,7 +1977,7 @@ def get_hcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False
     return model
 
 def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', oc_arch='asp',**kwargs):
+             root='./pretrain_models', oc_arch='asp',is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1510,12 +1995,26 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = SCSEHCOCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
@@ -1526,7 +2025,7 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
     return model
 
 def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
-             root='./pretrain_models', oc_arch='asp',**kwargs):
+             root='./pretrain_models', oc_arch='asp',is_dilated=False,**kwargs):
     r"""DANet model from the paper `"Dual Attention Network for Scene Segmentation"
     <https://arxiv.org/abs/1809.02983.pdf>`
     """
@@ -1544,12 +2043,26 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
         'resnet50': (2048, 1024, 512, 256, 64),
         'resnet101': (2048, 1024, 512, 256, 64),
         'resnet152': (2048, 1024, 512, 256, 64),
+        'atrous_resnet50': (2048, 1024, 512, 256, 64),
+        'atrous_resnet101': (2048, 1024, 512, 256, 64),
+        'atrous_resnet152': (2048, 1024, 512, 256, 64),
+        'resnet101_ibn_a': (2048, 1024, 512, 256, 64),
+        'resnext101_ibn_a': (2048, 1024, 512, 256, 64),
+        'se_resnet18': (512, 256, 128, 64, 64),
+        'se_resnet34': (512, 256, 128, 64, 64),
+        'se_resnet50': (2048, 1024, 512, 256, 64),
+        'se_resnet101': (2048, 1024, 512, 256, 64),
+        'se_resnet152': (2048, 1024, 512, 256, 64),
+        'se_resnext50_32x4d': (2048, 1024, 512, 256, 64),
+        'se_resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_32x4d': (2048, 1024, 512, 256, 64),
+        'resnext101_64x4d': (2048, 1024, 512, 256, 64),
     }
 
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = SCSEHCOCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file

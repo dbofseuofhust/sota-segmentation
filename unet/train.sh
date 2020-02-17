@@ -824,26 +824,89 @@
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
 
-DATASET=monusac
-CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
-                                    --model  deeplabv3plus \
-                                    --backbone atrous_resnet50 \
-                                    --checkname exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize896-rs-cj-allrt-ohem  \
-                                    --base-size 512 \
-                                    --crop-size 896 \
-                                    --epochs 240 \
-                                    --batch-size 8 \
-                                    --lr 0.02 \
-                                    --workers 2 \
-                                    --multi-grid \
-                                    --multi-dilation 4 8 16 \
-                                    --warmup True \
-                                    --warmup-epoch 10 \
-                                    --mutil-steps 80,140 \
-                                    --warmup-factor 0.1 \
-                                    --warmup-method linear \
-                                    --log-root ${DATASET} \
-                                    --ohem True
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize896-rs-cj-allrt-ohem  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --ohem True
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize896-msrs-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --scale
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize896-rs-cj002002002-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp4-danet50-warmup10-lr002-bsize512-csize896-rs-cj-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+
 
 
 #DATASET=monusac
@@ -1140,6 +1203,778 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
 #                                    --log-root ${DATASET}
 
 #DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp6-danet50-warmup10-lr002-bsize512-csize768-rs-cj-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp6-danet50-warmup10-lr002-bsize512-csize768-rs-cj2212-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp6-danet50-warmup10-lr002-bsize512-csize768-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp6-danet50-warmup10-lr002-bsize768-csize1024-rs-cj-allrt  \
+#                                    --base-size 768 \
+#                                    --crop-size 1024 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp6-danet50-warmup10-lr002-bsize512-csize768-rsreversed-cj-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp4-danet50-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname debug-exp4-danet50-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp4-danet101-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp4-danet50-warmup10-lr002-bsize512-csize896-rs-cj-8gpu  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-danet50-warmup10-lr002-resize1024-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 1024 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-danet50-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-danet50-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-danet50-warmup10-lr002-seprs-bsize1024-csize869  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  galdnet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-galdnet50-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-ms-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --scale
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-mswithval-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --scale
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt-mstd  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone atrous_se_resnet101 \
+#                                    --checkname exp8-danetsr101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone atrous_se_resnext101_32x4d \
+#                                    --checkname exp8-danetsrx101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model saltnet \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp8-saltnet-nohycol-atrous_resnet50-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt-aspp-dilated  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model psp \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-pspnet50-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt-aspp-dilated  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model asp_oc_dsn \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-asp_oc_dsn_resnet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --ohem False
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-default-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-default-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup20-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 20 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp8-danet152-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-danet101-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp8-deeplabv3plus50-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet101 \
+#                                    --checkname exp8-deeplabv3plus101-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python emanet/train.py --dataset ${DATASET} \
+#                                    --model  emanet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-emanet50-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --stride 8 \
+#                                    --stage-num 3 \
+#                                    --em-norm 0.9
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model saltnet \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp8-saltnet-nohycol-atrous_resnet50-warmup10-lr002-seprs-bsize896-csize768-cj-allrt-aspp-dilated  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet101 \
+#                                    --checkname Exp4-deeplabv3plus101-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet152 \
+#                                    --checkname exp4-deeplabv3plus152-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet152 \
+#                                    --checkname exp4-deeplabv3plus152-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname Exp4-deeplabv3plus50-warmup10-lr002-bsize512-csize896-rs-cj  \
+#                                    --base-size 512 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp7-danet50-warmup10-lr002-bsize512-csize768-rs-cj-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  deeplabv3plus \
+#                                    --backbone atrous_resnet50 \
+#                                    --checkname exp6-deeplabv3plus50-warmup10-lr002-bsize512-csize768-rs-cj-allrt  \
+#                                    --base-size 512 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
 #CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
 #                                    --model saltnet \
 #                                    --backbone se_resnext50_32x4d \
@@ -1298,3 +2133,933 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
 #                                    --warmup-factor 0.1 \
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-asp_oc_dsn_resnet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  pyramid_oc_dsn \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-pyramid_oc_dsn_resnet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone resnet152 \
+#                                    --checkname exp8-asp_oc_dsn_resnet152-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone se_resnet101 \
+#                                    --checkname exp8-asp_oc_dsn_se_resnet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone se_resnet152 \
+#                                    --checkname exp8-asp_oc_dsn_se_resnet152-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model asp_oc_dsn \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-asp_oc_dsn_resnet101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.003 \
+#                                    --workers 2 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --ohem False
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone se_resnet101 \
+#                                    --checkname exp8-danetsr101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone resnet152_ibn_a \
+#                                    --checkname exp8-asp_oc_dsn_resnet152_ibn_a-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101_ibn_a \
+#                                    --checkname exp8-danetibn101-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone resnet101_ibn_a \
+#                                    --checkname exp8-asp_oc_dsn_resnet101_ibn_a-warmup10-lr002-seprs-bsize1024-csize869-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 869 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  unet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-scseunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  unet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-unet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-unet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# need to be retrain
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-scseocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  daheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-daheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcscseunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-hcscseunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scsehcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-scsehcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scsedaheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-scsedaheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp8-scseocheadunet_resnet152-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone se_resnet101 \
+#                                    --checkname exp8-scseocheadunet_se_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone se_resnext101_32x4d \
+#                                    --checkname exp8-scseocheadunet_se_resnext101_32x4d-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone resnext101_32x4d \
+#                                    --checkname exp8-scseocheadunet_resnext101_32x4d-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone resnext101_64x4d \
+#                                    --checkname exp8-scseocheadunet_resnext101_64x4d-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  scseocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-scseocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# need to be retrain
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp8-ocheadunet_resnet152-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone se_resnet101 \
+#                                    --checkname exp8-ocheadunet_se_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname reproduce-exp8-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone densenet201 \
+#                                    --checkname exp8-ocheadunet_densenet201-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp8-ocheadunet_resnet152-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101_ibn_a \
+#                                    --checkname exp8-ocheadunet_resnet101_ibn_a-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 4 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --is-dilated True
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone atrous_resnet101 \
+#                                    --checkname exp8-ocheadunet_atrous_resnet101_ibn_a-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 4 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET} \
+#                                    --is-dilated True
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-warmup10-lr0002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.002 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-poly-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup False \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-poly-lr0002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.002 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup False \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname reproduce-exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-poly-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup False \
+#                                    --log-root ${DATASET} \
+#                                    --lr-scheduler cos
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  cpn \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-cpn101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-ocheadunet_resnet101-refine-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+#DATASET=monusac
+#CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet50 \
+#                                    --checkname exp8-ocheadunet_resnet50-refine-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  ocheadunet \
+#                                     --backbone resnet50 \
+#                                     --checkname exp8-ocheadunet_resnet50-refine-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                     --base-size 1024 \
+#                                     --crop-size 896 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 8 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --warmup True \
+#                                     --warmup-epoch 10 \
+#                                     --mutil-steps 80,140 \
+#                                     --warmup-factor 0.1 \
+#                                     --warmup-method linear \
+#                                     --log-root ${DATASET}
+
+# experiments in the same dataset as htc
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp9-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python unet/train.py --dataset ${DATASET} \
+#                                    --model  danet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp9-danet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python ocnet/train.py --dataset ${DATASET} \
+#                                    --model  asp_oc_dsn \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-asp_oc_dsn_resnet152-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+DATASET=monusac
+CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+                                   --model  hcocheadunet \
+                                   --backbone resnet101 \
+                                   --checkname exp9-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+                                   --base-size 1024 \
+                                   --crop-size 896 \
+                                   --epochs 240 \
+                                   --batch-size 8 \
+                                   --lr 0.02 \
+                                   --workers 8 \
+                                   --multi-grid \
+                                   --multi-dilation 4 8 16 \
+                                   --warmup True \
+                                   --warmup-epoch 10 \
+                                   --mutil-steps 80,140 \
+                                   --warmup-factor 0.1 \
+                                   --warmup-method linear \
+                                   --log-root ${DATASET}

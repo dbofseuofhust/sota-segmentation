@@ -1,9 +1,12 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import scipy.io as scio
 
-maskpath = r'C:\Users\admin\PycharmProjects\Crack\DeepBlueAI\ead-segmentation\scripts\TCGA-5P-A9K0-01Z-00-DX1_3.png'
+maskpath = r'/data/db/ead-segmentation/unet/636_mask.mat'
+mask = scio.loadmat(maskpath)
 # mask = cv2.imread(maskpath)
+# print(mask.shape)
 # print(np.unique(mask))
 # plt.imshow(mask*40)
 # plt.show()

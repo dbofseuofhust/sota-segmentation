@@ -181,7 +181,7 @@ def resnet50_ibn_a(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model.load_state_dict('/home/dongbin/.cache/torch/checkpoints/r50_ibn_a.pth')
     return model
 
 def resnet101_ibn_a(pretrained=False, **kwargs):
@@ -191,7 +191,18 @@ def resnet101_ibn_a(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
+        param_dict = torch.load('/home/dongbin/.cache/torch/checkpoints/resnet101_ibn_a.pth.tar', map_location=lambda storage, loc: storage)
+        if 'state_dict' in param_dict.keys():
+            param_dict = param_dict['state_dict']
+        print('ignore_param:')
+        print([k for k, v in param_dict.items() if
+               k.replace('module.', '') not in model.state_dict() or model.state_dict()[
+                   k.replace('module.', '')].size() != v.size()])
+        param_dict = {k: v for k, v in param_dict.items() if
+                      k.replace('module.', '') in model.state_dict() and model.state_dict()[
+                          k.replace('module.', '')].size() == v.size()}
+        for i in param_dict:
+            model.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
     return model
 
 
@@ -202,7 +213,15 @@ def resnet152_ibn_a(pretrained=False, **kwargs):
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+        param_dict = torch.load('/home/dongbin/.cache/torch/checkpoints/resnet152-b121ed2d.pth',
+                                map_location=lambda storage, loc: storage)
+        if 'state_dict' in param_dict.keys():
+            param_dict = param_dict['state_dict']
+        param_dict = {k: v for k, v in param_dict.items() if
+                      k.replace('module.', '') in model.state_dict() and model.state_dict()[
+                          k.replace('module.', '')].size() == v.size()}
+        for i in param_dict:
+            model.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
     return model
 
 if __name__ == '__main__':

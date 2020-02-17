@@ -342,7 +342,7 @@ class DecoderBottleneck(nn.Module):
 #         # self.center_conv1x1 = nn.Conv2d(512, 64, kernel_size=1)
 #         # self.center_fc = nn.Linear(64, self.num_classes)
 #
-#         # modify by db to unify with base.py
+#         # modify by db to unify with base.py0
 #         self.encoder = self.pretrained
 #         self.conv1 = nn.Sequential(self.encoder.conv1,
 #                                    self.encoder.bn1,

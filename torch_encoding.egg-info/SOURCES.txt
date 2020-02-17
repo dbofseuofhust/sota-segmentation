@@ -11,6 +11,7 @@ encoding/datasets/cityscapes.py
 encoding/datasets/cityscapes_oc.py
 encoding/datasets/coco.py
 encoding/datasets/crack.py
+encoding/datasets/disease.py
 encoding/datasets/ead.py
 encoding/datasets/monusac.py
 encoding/datasets/pascal_aug.py
@@ -18,12 +19,15 @@ encoding/datasets/pascal_voc.py
 encoding/datasets/pcontext.py
 encoding/dilated/__init__.py
 encoding/dilated/resnet.py
+encoding/dilated/resnet_atrous.py
 encoding/dilated/resnet_ibn_a.py
 encoding/dilated/resnet_ibn_b.py
 encoding/dilated/resnext_ibn_a.py
 encoding/dilated/se_resnet_ibn_a.py
 encoding/dilated/se_resnet_ibn_b.py
 encoding/dilated/senet.py
+encoding/dilated/senet_atrous.py
+encoding/dilated/xception.py
 encoding/lib/__init__.py
 encoding/lib/cpu/__init__.py
 encoding/lib/cpu/setup.py
@@ -39,6 +43,8 @@ encoding/lib/gpu/syncbn_kernel.cu
 encoding/models/__init__.py
 encoding/models/base.py
 encoding/models/ccnet.py
+encoding/models/cpn.py
+encoding/models/cstnet.py
 encoding/models/danet.py
 encoding/models/deeplabv3.py
 encoding/models/deeplabv3plus.py
@@ -46,9 +52,11 @@ encoding/models/emanet.py
 encoding/models/encnet.py
 encoding/models/fcn.py
 encoding/models/galdnet.py
+encoding/models/globalNet.py
 encoding/models/model_store.py
 encoding/models/model_zoo.py
 encoding/models/psp.py
+encoding/models/refineNet.py
 encoding/models/resnet101_asp_oc.py
 encoding/models/resnet101_base_oc.py
 encoding/models/resnet101_baseline.py

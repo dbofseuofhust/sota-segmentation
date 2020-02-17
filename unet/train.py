@@ -37,7 +37,12 @@ class Trainer():
         # data transforms
         input_transform = transform.Compose([
             transform.ToTensor(),
-            transform.Normalize([.485, .456, .406], [.229, .224, .225])])
+            transform.Normalize([.485, .456, .406], [.229, .224, .225])
+            # transform.Normalize([0.6700539749841021,0.5465126513221624,0.7413476545071912],
+            #                     [0.16030703740184896,0.2000897845573496,0.17028963625391302]) # for monusac dataset
+            # transform.Normalize([0.4906180488868793,0.3271382281614091,0.2540256913073398],
+            #                     [0.2272532905848313,0.18719978740803653,0.1592990354733096]) # for disease dataset
+        ])
         # dataset
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
                        'crop_size': args.crop_size, 'logger': self.logger,
@@ -54,14 +59,24 @@ class Trainer():
         self.valloader = data.DataLoader(testset, batch_size=1,
                                          drop_last=False, shuffle=False, **kwargs)
         self.nclass = trainset.num_class
+
         # model
-        model = get_segmentation_model(args.model, dataset=args.dataset,
-                                       backbone=args.backbone,
-                                       aux=args.aux, se_loss=args.se_loss,
-                                       norm_layer=nn.BatchNorm2d,
-                                       base_size=args.base_size, crop_size=args.crop_size,
-                                       multi_grid=args.multi_grid,
-                                       multi_dilation=args.multi_dilation)
+        if args.is_dilated:
+            model = get_segmentation_model(args.model, dataset=args.dataset,
+                                           backbone=args.backbone,
+                                           aux=args.aux, se_loss=args.se_loss,
+                                           norm_layer=nn.BatchNorm2d,
+                                           base_size=args.base_size, crop_size=args.crop_size,
+                                           multi_grid=args.multi_grid,
+                                           multi_dilation=args.multi_dilation,is_dilated=args.is_dilated)
+        else:
+            model = get_segmentation_model(args.model, dataset=args.dataset,
+                                           backbone=args.backbone,
+                                           aux=args.aux, se_loss=args.se_loss,
+                                           norm_layer=nn.BatchNorm2d,
+                                           base_size=args.base_size, crop_size=args.crop_size,
+                                           multi_grid=args.multi_grid,
+                                           multi_dilation=args.multi_dilation)
         #print(model)
         self.logger.info(model)
         # optimizer using different LR

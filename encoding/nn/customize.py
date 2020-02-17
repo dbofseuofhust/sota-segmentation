@@ -268,14 +268,39 @@ class SegmentationMultiLosses(CrossEntropyLoss):
     def forward(self, *inputs):
 
         *preds, target = tuple(inputs)
-        pred1, pred2 ,pred3= tuple(preds)
 
-
-        loss1 = super(SegmentationMultiLosses, self).forward(pred1, target)
-        loss2 = super(SegmentationMultiLosses, self).forward(pred2, target)
-        loss3 = super(SegmentationMultiLosses, self).forward(pred3, target)
-        loss = loss1 + loss2 + loss3
+        preds = tuple(preds)
+        loss = 0
+        for v in preds:
+            loss += super(SegmentationMultiLosses, self).forward(v, target)
         return loss
+
+        # pred1, pred2 ,pred3 = tuple(preds)
+        # loss1 = super(SegmentationMultiLosses, self).forward(pred1, target)
+        # loss2 = super(SegmentationMultiLosses, self).forward(pred2, target)
+        # loss3 = super(SegmentationMultiLosses, self).forward(pred3, target)
+        # loss = loss1 + loss2 + loss3
+        # return loss
+
+# class SegmentationExtraMultiLosses(CrossEntropyLoss):
+#     """2D Cross Entropy Loss with Multi-L1oss"""
+#     def __init__(self, nclass=-1, weight=None,size_average=True, ignore_index=-1):
+#         super(SegmentationExtraMultiLosses, self).__init__(weight, size_average, ignore_index)
+#         self.nclass = nclass
+#
+#
+#     def forward(self, *inputs):
+#
+#         *preds, target = tuple(inputs)
+#         pred1, pred2, pred3, pred4, pred5 = tuple(preds)
+#
+#         loss1 = super(SegmentationExtraMultiLosses, self).forward(pred1, target)
+#         loss2 = super(SegmentationExtraMultiLosses, self).forward(pred2, target)
+#         loss3 = super(SegmentationExtraMultiLosses, self).forward(pred3, target)
+#         loss4 = super(SegmentationExtraMultiLosses, self).forward(pred4, target)
+#         loss5 = super(SegmentationExtraMultiLosses, self).forward(pred5, target)
+#         loss = loss1 + loss2 + loss3 + loss4 + loss5
+#         return loss
 
 
 class View(Module):

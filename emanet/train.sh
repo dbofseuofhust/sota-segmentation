@@ -50,9 +50,9 @@ DATASET=monusac
 CUDA_VISIBLE_DEVICES=4,5,6,7 python emanet/train.py --dataset ${DATASET} \
                                     --model  emanet \
                                     --backbone resnet50 \
-                                    --checkname exp4-emanet50-warmup10-lr002-bsize512-csize896-rs-cj  \
-                                    --base-size 512 \
-                                    --crop-size 896 \
+                                    --checkname exp8-emanet50-warmup10-lr002-seprs-bsize896-csize768-cj-allrt  \
+                                    --base-size 896 \
+                                    --crop-size 768 \
                                     --epochs 240 \
                                     --batch-size 8 \
                                     --lr 0.02 \

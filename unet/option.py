@@ -60,6 +60,9 @@ class Options():
         parser.add_argument('--warmup-method', type=str, default='linear',
                             help='choose from (linear or constant).')
 
+        parser.add_argument('--is-dilated', type=bool, default=False,
+                            help='whether to use dilated conv.')
+
         # optimizer params
         parser.add_argument('--lr', type=float, default=None, metavar='LR',
                             help='learning rate (default: auto)')

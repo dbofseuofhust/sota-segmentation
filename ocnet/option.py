@@ -39,6 +39,20 @@ class Options():
                             help='crop image size')
         # training hyper params
 
+        # warmup params
+        parser.add_argument('--warmup', type=bool, default=False,
+                            help='whether to use warmup.')
+        parser.add_argument('--warmup-epoch', type=int, default=10,
+                            help='warmup epochs.')
+        parser.add_argument('--mutil-steps', type=str, default='80,140',
+                            help='learning rate decay steps.')
+        parser.add_argument('--gamma', type=float, default=0.1,
+                            help='gamma')
+        parser.add_argument('--warmup-factor', type=float, default=0.1,
+                            help='warmup factor.')
+        parser.add_argument('--warmup-method', type=str, default='linear',
+                            help='choose from (linear or constant).')
+
         # galdnet
         parser.add_argument("--ohem-thres", type=float, default=0.6,
                             help="choose the samples with correct probability underthe threshold.")

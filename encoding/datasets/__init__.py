@@ -8,6 +8,7 @@ from .cityscapes_oc import CitySegmentationTrain,CitySegmentationTest,CitySegmen
 from .ead import EADSegmentation
 from .crack import CrackSegmentation
 from .monusac import MonusacSegmentation
+from .disease import DiseaseSegmentation
 
 datasets = {
     'ade20k': ADE20KSegmentation,
@@ -19,6 +20,7 @@ datasets = {
     'ead': EADSegmentation,
     'crack': CrackSegmentation,
     'monusac': MonusacSegmentation,
+    'disease': DiseaseSegmentation,
 }
 
 def get_segmentation_dataset(name, **kwargs):

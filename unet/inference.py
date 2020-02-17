@@ -12,6 +12,7 @@ import torch
 from torch.utils import data
 import torchvision.transforms as transform
 from torch.nn.parallel.scatter_gather import gather
+from PIL import Image
 
 import encoding.utils as utils
 from encoding.nn import SegmentationLosses
@@ -94,7 +95,10 @@ def test(args):
             predicts = [torch.max(output, 1)[1].cpu().numpy() + testset.pred_offset
                         for output in outputs]
             for predict, impath in zip(predicts, im_paths):
-                mask = utils.get_mask_pallete(predict, args.dataset)
+                # for vis 
+                # mask = utils.get_mask_pallete(predict, args.dataset)
+                # for submit
+                mask = Image.fromarray(predict.squeeze().astype('uint8'))
                 # scale into original shape
                 outname = os.path.splitext(impath)[0] + '.png'
                 mask.save(os.path.join(outdir, outname))
