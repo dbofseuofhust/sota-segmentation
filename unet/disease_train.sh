@@ -1899,22 +1899,162 @@
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
 
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model saltnet \
+#                                     --backbone atrous_resnet50 \
+#                                     --checkname exp8-saltnet-nohycol-atrous_resnet50-warmup10-lr002-resize512-aspp-dilated  \
+#                                     --base-size 512 \
+#                                     --crop-size 512 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --warmup True \
+#                                     --warmup-epoch 10 \
+#                                     --mutil-steps 80,140 \
+#                                     --warmup-factor 0.1 \
+#                                     --warmup-method linear \
+#                                     --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-cj-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp9-hcocheadunet_resnet101-warmup10-lr002-resize768-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-allrt-trainval  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-ocheadunet_resnet152-warmup10-lr002-resize768-allrt  \
+#                                    --base-size 896 \
+#                                    --crop-size 768 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=disease
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  ocheadunet \
+#                                    --backbone resnet152 \
+#                                    --checkname exp9-ocheadunet_resnet152-warmup10-lr002-resize896-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
 DATASET=disease
-CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
-                                    --model saltnet \
-                                    --backbone atrous_resnet50 \
-                                    --checkname exp8-saltnet-nohycol-atrous_resnet50-warmup10-lr002-resize512-aspp-dilated  \
-                                    --base-size 512 \
-                                    --crop-size 512 \
-                                    --epochs 240 \
-                                    --batch-size 8 \
-                                    --lr 0.02 \
-                                    --workers 2 \
-                                    --multi-grid \
-                                    --multi-dilation 4 8 16 \
-                                    --warmup True \
-                                    --warmup-epoch 10 \
-                                    --mutil-steps 80,140 \
-                                    --warmup-factor 0.1 \
-                                    --warmup-method linear \
-                                    --log-root ${DATASET}
+CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+                                   --model  unet \
+                                   --backbone resnet152 \
+                                   --checkname exp9-unet_resnet152-warmup10-lr002-resize896-allrt  \
+                                   --base-size 1024 \
+                                   --crop-size 896 \
+                                   --epochs 240 \
+                                   --batch-size 8 \
+                                   --lr 0.02 \
+                                   --workers 8 \
+                                   --multi-grid \
+                                   --multi-dilation 4 8 16 \
+                                   --warmup True \
+                                   --warmup-epoch 10 \
+                                   --mutil-steps 80,140 \
+                                   --warmup-factor 0.1 \
+                                   --warmup-method linear \
+                                   --log-root ${DATASET}

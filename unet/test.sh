@@ -166,27 +166,10 @@
 #                                            --log-root ${DATASET}
 
 # debug
-# DATASET=monusac
-# MODEL=ocheadunet
-# CKPT=${DATASET}/${MODEL}_model/exp8-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt
-# CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/submit.py --dataset ${DATASET} \
-#                                            --model ${MODEL} \
-#                                            --resume-dir ${CKPT}/ \
-#                                            --base-size 1024 \
-#                                            --crop-size 896 \
-#                                            --workers 4 \
-#                                            --backbone resnet101 \
-#                                            --multi-grid \
-#                                            --multi-dilation 4 8 16 \
-#                                            --epochs 240  \
-#                                            --batch-size 8 \
-#                                            --lr 0.003 \
-#                                            --log-root ${DATASET}
-
 DATASET=monusac
-MODEL=ocheadunet
-CKPT=${DATASET}/${MODEL}_model/exp9-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt
-CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/inference.py --dataset ${DATASET} \
+MODEL=hcocheadunet
+CKPT=${DATASET}/${MODEL}_model/exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt
+CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/submit.py --dataset ${DATASET} \
                                            --model ${MODEL} \
                                            --resume-dir ${CKPT}/ \
                                            --base-size 1024 \
@@ -199,3 +182,20 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/inference.py --dataset ${DATASET} \
                                            --batch-size 8 \
                                            --lr 0.003 \
                                            --log-root ${DATASET}
+
+# DATASET=monusac
+# MODEL=hcocheadunet
+# CKPT=${DATASET}/${MODEL}_model/exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/inference.py --dataset ${DATASET} \
+#                                            --model ${MODEL} \
+#                                            --resume-dir ${CKPT}/ \
+#                                            --base-size 1024 \
+#                                            --crop-size 896 \
+#                                            --workers 4 \
+#                                            --backbone resnet101 \
+#                                            --multi-grid \
+#                                            --multi-dilation 4 8 16 \
+#                                            --epochs 240  \
+#                                            --batch-size 8 \
+#                                            --lr 0.003 \
+#                                            --log-root ${DATASET}

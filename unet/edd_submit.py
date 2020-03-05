@@ -211,31 +211,6 @@ class BaseDataset(data.Dataset):
     def pred_offset(self):
         raise NotImplemented
 
-    def cal_new_size(self, im_h, im_w, min_size, max_size):
-        if im_h < im_w:
-            if im_h < min_size:
-                ratio = 1.0 * min_size / im_h
-                im_h = min_size
-                im_w = round(im_w * ratio)
-            elif im_h > max_size:
-                ratio = 1.0 * max_size / im_h
-                im_h = max_size
-                im_w = round(im_w * ratio)
-            else:
-                ratio = 1.0
-        else:
-            if im_w < min_size:
-                ratio = 1.0 * min_size / im_w
-                im_w = min_size
-                im_h = round(im_h * ratio)
-            elif im_w > max_size:
-                ratio = 1.0 * max_size / im_w
-                im_w = max_size
-                im_h = round(im_h * ratio)
-            else:
-                ratio = 1.0
-        return im_h, im_w, ratio
-
     def _val_sync_transform(self, img, mask):
         assert self.base_size > self.crop_size
 
@@ -322,36 +297,39 @@ class BaseDataset(data.Dataset):
     def _mask_transform(self, mask):
         return torch.from_numpy(np.array(mask)).long()
 
-class MonusacSegmentation(BaseDataset):
-    BASE_DIR = 'monusac'
-    NUM_CLASS = 5
+class EADSegmentation(BaseDataset):
+    BASE_DIR = 'ead'
+    NUM_CLASS = 6
+
+    # BASE_DIR = 'disease'
+    # NUM_CLASS = 6
 
     def __init__(self, root='/data/Dataset/Testing images', split='train',
                  mode=None, transform=None, target_transform=None, base_size=768, crop_size=1024, **kwargs):
-        super(MonusacSegmentation, self).__init__(
+        super(EADSegmentation, self).__init__(
             root, split, mode, transform, target_transform, base_size=base_size, crop_size=crop_size, **kwargs)
         # assert exists
         assert os.path.exists(root), "Please download the dataset!!"
 
         self.images = []
         for u in os.listdir(root):
-            for v in os.listdir(os.path.join(root,u)):
-                if v.endswith('tif'):
-                    self.images.append(os.path.join(root,u,v))
+            self.images.append(os.path.join(root,u))
 
         if len(self.images) == 0:
             raise (RuntimeError("Found 0 images in subfolders of: \
                 " + root + "\n"))
 
     def __getitem__(self, index):
-        # temp = '{}.jpg'.format(self.images[index].split('.')[0])
-        # shutil.copyfile(self.images[index],temp)
         img = Image.open(self.images[index]).convert('RGB')
         if self.mode == 'vis':
             if self.transform is not None:
                 # to keep the same scale
+                # w, h = img.size
+                # ow, oh = self.crop_size, self.crop_size
+                # img = img.resize((ow, oh), Image.BILINEAR)
                 img = self.transform(img)
-            return img, '{}*{}'.format(self.root,self.images[index])
+            # return img, '{}*{}*{}'.format(w,h,os.path.basename(self.images[index]))
+            return img, os.path.basename(self.images[index])
 
     def _mask_transform(self, mask):
         target = np.array(mask).astype('int32')
@@ -375,7 +353,7 @@ def test(args):
         transform.ToTensor(),
         transform.Normalize([.485, .456, .406], [.229, .224, .225])])
     # dataset
-    testset = MonusacSegmentation(root=args.test_folder,split='test', mode='vis',
+    testset = EADSegmentation(root=args.test_folder,split='test', mode='vis',
                                            transform=input_transform)
     # dataloader
     loader_kwargs = {'num_workers': args.workers, 'pin_memory': True} \
@@ -427,6 +405,7 @@ def test(args):
             outputs = evaluator.parallel_forward(image)
             predicts = [torch.max(output, 1)[1].cpu().numpy() + testset.pred_offset
                         for output in outputs]
+            # predicts = outputs
             for predict, impath in zip(predicts, im_paths):
                 # for vis 
                 # mask = utils.get_mask_pallete(predict, args.dataset)
@@ -435,15 +414,30 @@ def test(args):
                 # mask = Image.fromarray(predict.squeeze().astype('uint8'))
 
                 # for norm outputs
-                _root, _impath = impath.split('*')
-                impath = _impath.replace(_root+'/','')
-                outname = os.path.splitext(impath)[0] + '.png'
-                mask = predict.squeeze().astype('uint8')
-                norm_outputs(mask,outdir,outname)
+                # w, h, _root, _impath = impath.split('*')
+                # impath = _impath.replace(_root+'/','')
+                # outname = os.path.splitext(impath)[0] + '.tif'
+                # mask = predict.squeeze().astype('uint8')
+                # norm_outputs(mask,outdir,outname,(int(w),int(h)))
+                
+                # mask.resize((int(w), int(h)))
 
                 # scale into original shape
                 # outname = os.path.splitext(impath)[0] + '.png'
                 # mask.save(os.path.join(outdir, outname))
+
+                # original
+                mask = predict.squeeze().astype('uint8')
+                outname = os.path.splitext(impath)[0] + '.tif'
+                norm_outputs(mask,outdir,outname)
+
+                # w, h, impath = impath.split('*')
+                # predict = torch.nn.functional.upsample(predict, (int(h), int(w)))
+                # predict = torch.max(predict, 1)[1].cpu().numpy() + testset.pred_offset
+                # mask = predict.squeeze().astype('uint8')
+                # outname = os.path.splitext(impath)[0] + '.tif'
+                # norm_outputs(mask,outdir,outname)
+                
             # dummy outputs for compatible with eval mode
             return 0, 0, 0, 0
 
@@ -500,31 +494,105 @@ def eval_multi_models(args):
             fh.close()
     print('Evaluation is finished!!!')
 
+import scipy.misc as misc
+from tifffile import imsave
+# def norm_outputs(mask,save_dir,name,orisize):
+#     os.makedirs(save_dir,exist_ok=True)
+#     num_classes = 5
+#     ow, oh = orisize
+#     savemask = np.zeros((num_classes,ow,oh),dtype=np.uint8)
+#     for i in range(num_classes):
+#         submask = np.zeros(mask.shape)
+#         submask[mask == (i+1)] = (i+1)
+#         submask.resize(orisize)
+#         # print(np.unique(submask))
+#         savemask[i,:,:] = submask
+#     imsave(os.path.join(save_dir, name), savemask)
+#     # savemask = savemask.astype(np.uint8)
+#     # tif = TIFF.open(os.path.join(save_dir, name), mode='w') 
+#     # tif.write_image(savemask, compression=None)
+#     # print(savemask.shape)
+
 def norm_outputs(mask,save_dir,name):
-    num_classes = 4
-    cell_classes = {1:'Epithelial',2:'Lymphocyte',3:'Neutrophil',4:'Macrophage'}
+    os.makedirs(save_dir,exist_ok=True)
+    num_classes = 5
+    ow, oh = mask.shape
+    savemask = np.zeros((num_classes,ow,oh),dtype=np.uint8)
     for i in range(num_classes):
         submask = np.zeros(mask.shape)
         submask[mask == (i+1)] = (i+1)
-        up,down = name.split('/')
-        subsave = os.path.join(save_dir,up,down.split('.')[0],cell_classes[i+1])
-        os.makedirs(subsave,exist_ok=True)
-        scio.savemat(os.path.join(subsave,'{}_mask.mat'.format(i+1)),{'n_ary_mask':submask})
+        savemask[i,:,:] = submask
+    imsave(os.path.join(save_dir, name), savemask)
 
 if __name__ == "__main__":
 
+    # best now
+    # args = Options().parse()
+    # args.model = 'hcocheadunet'
+    # args.resume_dir = 'ead/hcocheadunet_model/exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-allrt'
+    # args.base_size = 896
+    # args.crop_size = 768
+    # args.workers = 4
+    # args.backbone = 'resnet152'
+    # args.log_root
+    # args.dataset = 'ead'
+    # args.multi_dilation = [4,8,16]
+    # args.multi_grid
+    # # args.scale
+    # # args.multi_scales = True
+    # args.test_folder = '/data/Dataset/docker_test/EAD2020-Phase-II-Evaluation/SemanticSegmentation' # modify here for your test images dir
+
+    # torch.manual_seed(args.seed)
+    # args.test_batch_size = torch.cuda.device_count()
+    # eval_multi_models(args)
+
+    # args = Options().parse()
+    # args.model = 'hcocheadunet'
+    # args.resume_dir = 'ead/hcocheadunet_model/exp9-hcocheadunet_resnet152-warmup10-lr002-resize896-allrt'
+    # args.base_size = 1024
+    # args.crop_size = 896
+    # args.workers = 4
+    # args.backbone = 'resnet152'
+    # args.log_root
+    # args.dataset = 'ead'
+    # args.multi_dilation = [4,8,16]
+    # args.multi_grid
+    # args.test_folder = '/data/Dataset/docker_test/ead2020/SemanticSegmentation' # modify here for your test images dir
+
+    # torch.manual_seed(args.seed)
+    # args.test_batch_size = torch.cuda.device_count()
+    # eval_multi_models(args)
+
+    # args = Options().parse()
+    # args.model = 'hcocheadunet'
+    # args.resume_dir = 'ead/hcocheadunet_model/exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-allrt-trainval'
+    # args.base_size = 896
+    # args.crop_size = 768
+    # args.workers = 4
+    # args.backbone = 'resnet152'
+    # args.log_root
+    # args.dataset = 'ead'
+    # args.multi_dilation = [4,8,16]
+    # args.multi_grid
+    # args.test_folder = '/data/Dataset/docker_test/ead2020/SemanticSegmentation' # modify here for your test images dir
+
+    # torch.manual_seed(args.seed)
+    # args.test_batch_size = torch.cuda.device_count()
+    # eval_multi_models(args)
+
     args = Options().parse()
     args.model = 'hcocheadunet'
-    args.resume_dir = 'monusac/hcocheadunet_model/exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt'
-    args.base_size = 1024
-    args.crop_size = 896
+    args.resume_dir = 'disease/hcocheadunet_model/exp9-hcocheadunet_resnet152-warmup10-lr002-resize768-allrt'
+    args.base_size = 896
+    args.crop_size = 768
     args.workers = 4
-    args.backbone = 'resnet101'
+    args.backbone = 'resnet152'
     args.log_root
-    args.dataset = 'monusac'
+    args.dataset = 'disease'
     args.multi_dilation = [4,8,16]
-    args.multi_grid
-    args.test_folder = '/data/Dataset/Testing images' # modify here for your test images dir
+    # args.multi_grid
+    # args.multi_scales = True
+    args.test_folder = '/data/Dataset/docker_test/EDD_evaluation_test-Final' # modify here for your test images dir
 
     torch.manual_seed(args.seed)
     args.test_batch_size = torch.cuda.device_count()

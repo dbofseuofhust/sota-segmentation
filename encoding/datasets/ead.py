@@ -54,7 +54,7 @@ class EADSegmentation(BaseDatasetV2):
         mask = Image.open(self.masks[index])
 
         # synchrosized transform
-        if self.mode == 'train':
+        if self.mode == 'train' or self.mode == 'trainval':
             img, mask = self._sync_transform(img, mask)
         elif self.mode == 'val':
             img, mask = self._val_sync_transform(img, mask)
@@ -108,6 +108,14 @@ def _get_cityscapes_pairs(folder, split='train'):
     elif split == 'test':
         split_f = os.path.join('datasets/ead', 'val_fine.txt')
         img_paths, mask_paths = get_path_pairs(folder, split_f)
+    elif split == 'trainval':
+        split_t = os.path.join('datasets/ead', 'train_fine.txt')
+        train_img_paths, train_mask_paths = get_path_pairs(folder, split_t)
+
+        split_v = os.path.join('datasets/ead', 'val_fine.txt')
+        val_img_paths, val_mask_paths = get_path_pairs(folder, split_v)
+
+        img_paths, mask_paths = train_img_paths+val_img_paths,train_mask_paths+val_mask_paths
     else:
         split_f = os.path.join('datasets/ead', 'trainval_fine.txt')
         img_paths, mask_paths = get_path_pairs(folder, split_f)
