@@ -9,6 +9,8 @@ from .ead import EADSegmentation
 from .crack import CrackSegmentation
 from .monusac import MonusacSegmentation
 from .disease import DiseaseSegmentation
+from .buildings import BuildingSegmentation,BuildingSegmentation2
+
 
 datasets = {
     'ade20k': ADE20KSegmentation,
@@ -21,6 +23,8 @@ datasets = {
     'crack': CrackSegmentation,
     'monusac': MonusacSegmentation,
     'disease': DiseaseSegmentation,
+    'buildings': BuildingSegmentation,
+    'buildings2': BuildingSegmentation2,
 }
 
 def get_segmentation_dataset(name, **kwargs):

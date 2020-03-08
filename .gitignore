@@ -13,4 +13,11 @@ pretrain_models/
 ead/
 monusac/
 disease/
+buildings2/
+
+hrnet-ocr/log/
+hrnet-ocr/output/
+hrnet-ocr/pretrained_models
+hrnet-ocr/scripts/
+hrnet-ocr/detail-api/
 

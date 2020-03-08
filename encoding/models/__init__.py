@@ -19,6 +19,7 @@ from .saltnet import get_saltnet
 from .unet import get_unet,get_daheadunet,get_hcocheadunet,get_hcscseunet,get_ocheadunet,get_scsehcocheadunet,get_scseocheadunet,get_scseunet
 from .unet import get_scsedaheadunet
 from .cpn import get_cpn
+from .unetplus import get_unetplus,get_ocheadunetplus
 
 def get_segmentation_model(name, **kwargs):
     from .fcn import get_fcn
@@ -47,6 +48,9 @@ def get_segmentation_model(name, **kwargs):
         'scsehcocheadunet': get_scsehcocheadunet,
         'scseocheadunet': get_scseocheadunet,
         'scseunet': get_scseunet,
+
+        'unetplus': get_unetplus,
+        'ocheadunetplus': get_ocheadunetplus,
     }
     return models[name.lower()](**kwargs)
 
