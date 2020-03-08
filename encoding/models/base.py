@@ -31,7 +31,7 @@ class BaseNet(nn.Module):
     def __init__(self, nclass, backbone, aux, se_loss, dilated=True, norm_layer=None,
                  base_size=576, crop_size=608, mean=[.485, .456, .406],
                  std=[.229, .224, .225], root='./pretrain_models',
-                 multi_grid=False, multi_dilation=None):
+                 multi_grid=False, multi_dilation=None,pretrained=True):
         super(BaseNet, self).__init__()
         self.nclass = nclass
         self.aux = aux
@@ -42,15 +42,15 @@ class BaseNet(nn.Module):
         self.crop_size = crop_size
         # copying modules from pretrained models
         if backbone == 'resnet50':
-            self.pretrained = resnet50(pretrained=True, dilated=dilated,
+            self.pretrained = resnet50(pretrained=pretrained, dilated=dilated,
                                               norm_layer=norm_layer, root=root,
                                               multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'resnet101':
-            self.pretrained = resnet101(pretrained=True, dilated=dilated,
+            self.pretrained = resnet101(pretrained=pretrained, dilated=dilated,
                                                norm_layer=norm_layer, root=root,
                                                multi_grid=multi_grid,multi_dilation=multi_dilation)
         elif backbone == 'resnet152':
-            self.pretrained = resnet152(pretrained=True, dilated=dilated,
+            self.pretrained = resnet152(pretrained=pretrained, dilated=dilated,
                                                norm_layer=norm_layer, root=root,
                                                multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif 'atrous_resnet' in backbone:
@@ -69,25 +69,25 @@ class BaseNet(nn.Module):
             cardinality = 32
             self.pretrained = resnext101_ibn_a(baseWidth, cardinality)
         elif backbone == 'resnet101_ibn_a':
-            self.pretrained = resnet101_ibn_a(pretrained=True, dilated=dilated,
+            self.pretrained = resnet101_ibn_a(pretrained=pretrained, dilated=dilated,
                                              norm_layer=norm_layer, root=root,
                                              multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'resnet50_ibn_a':
-            self.pretrained = resnet50_ibn_a(pretrained=True, dilated=dilated,
+            self.pretrained = resnet50_ibn_a(pretrained=pretrained, dilated=dilated,
                                        norm_layer=norm_layer, root=root,
                                        multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'se_resnet152':
-            self.pretrained = se_resnet152(pretrained=True, dilated=dilated,
+            self.pretrained = se_resnet152(pretrained=pretrained, dilated=dilated,
                                         norm_layer=norm_layer, root=root,
                                         multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'se_resnet101':
-            self.pretrained = se_resnet101(pretrained=True, dilated=dilated,
+            self.pretrained = se_resnet101(pretrained=pretrained, dilated=dilated,
                                         norm_layer=norm_layer, root=root,
                                         multi_grid=multi_grid, multi_dilation=multi_dilation)
         elif backbone == 'senet154':
             self.pretrained = senet154()
         elif backbone == 'resnet34':
-            self.pretrained = resnet34(pretrained=True)
+            self.pretrained = resnet34(pretrained=pretrained)
         elif backbone in ['resnext101_32x4d','resnext101_64x4d', 'densenet121', 'densenet169', 'densenet201']:
             self.pretrained = None
         else:
@@ -143,6 +143,10 @@ class MultiEvalModule(DataParallel):
             self.scales = [1.0]
         else:
             self.scales = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.2]
+            # self.scales = [ 0.75, 1.0, 1.25]
+            # self.scales = [ 1.0, 1.25,1.5,1.75,2.0]
+            # self.scales = [ 1.25]
+
         self.flip = flip
         print('MultiEvalModule: base_size {}, crop_size {}'. \
             format(self.base_size, self.crop_size))
@@ -188,6 +192,7 @@ class MultiEvalModule(DataParallel):
                 width = long_size
                 height = int(1.0 * h * long_size / w + 0.5)
                 short_size = height
+            
             # resize image to current size
             cur_img = resize_image(image, height, width, **self.module._up_kwargs)
             if long_size <= crop_size:
@@ -204,6 +209,7 @@ class MultiEvalModule(DataParallel):
                     pad_img = cur_img
                 _,_,ph,pw = pad_img.size()
                 assert(ph >= height and pw >= width)
+                # print(ph,pw)
                 # grid forward and normalize
                 h_grids = int(math.ceil(1.0 * (ph-crop_size)/stride)) + 1
                 w_grids = int(math.ceil(1.0 * (pw-crop_size)/stride)) + 1
@@ -235,13 +241,206 @@ class MultiEvalModule(DataParallel):
         return scores
 
 
+# class ChopEvalModule(DataParallel):
+#     """Multi-size Segmentation Eavluator"""
+#     def __init__(self, module, nclass, device_ids=None, flip=True):
+#         super(ChopEvalModule, self).__init__(module, device_ids)
+#         self.nclass = nclass
+#         self.base_size = module.base_size
+#         self.crop_size = module.crop_size
+#         self.scales = [1.0]
+#         self.flip = flip
+#         print('ChopEvalModule: base_size {}, crop_size {}'. \
+#             format(self.base_size, self.crop_size))
+
+#     def parallel_forward(self, inputs, **kwargs):
+#         """Multi-GPU Mult-size Evaluation
+
+#         Args:
+#             inputs: list of Tensors
+#         """
+#         inputs = [(input.unsqueeze(0).cuda(device),)
+#                   for input, device in zip(inputs, self.device_ids)]
+#         replicas = self.replicate(self, self.device_ids[:len(inputs)])
+#         kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
+#         if len(inputs) < len(kwargs):
+#             inputs.extend([() for _ in range(len(kwargs) - len(inputs))])
+#         elif len(kwargs) < len(inputs):
+#             kwargs.extend([{} for _ in range(len(inputs) - len(kwargs))])
+#         outputs = self.parallel_apply(replicas, inputs, kwargs)
+#         return outputs
+
+#     def forward(self, image):
+#         """Mult-size Evaluation"""
+#         # only single image is supported for evaluation
+#         batch, _, h, w = image.size()
+#         assert(batch == 1)
+#         if len(self.scales) == 1:#single scale
+#             stride_rate = 2.0/3.0
+#             # stride_rate = 1.0/2.0
+#         else:
+#             stride_rate = 1.0/2.0
+#         crop_size = self.crop_size
+#         stride = int(crop_size * stride_rate)
+#         with torch.cuda.device_of(image):
+#             scores = image.new().resize_(batch,self.nclass,h,w).zero_().cuda()
+
+
+#         long_size = max(h,w)
+#         short_size = min(h,w)
+#         height,width = h,w
+#         cur_img = image
+#         if long_size <= crop_size:
+#             pad_img = pad_image(cur_img, self.module.mean,
+#                                 self.module.std, crop_size)
+#             outputs = module_inference(self.module, pad_img, self.flip)
+#             outputs = crop_image(outputs, 0, height, 0, width)
+#         else:
+#             if short_size < crop_size:
+#                 # pad if needed
+#                 pad_img = pad_image(cur_img, self.module.mean,
+#                                     self.module.std, crop_size)
+#             else:
+#                 pad_img = cur_img
+#             _,_,ph,pw = pad_img.size()
+
+#             # grid forward and normalize
+#             h_grids = int(math.ceil(1.0 * (ph-crop_size)/stride)) + 1
+#             w_grids = int(math.ceil(1.0 * (pw-crop_size)/stride)) + 1
+#             with torch.cuda.device_of(image):
+#                 outputs = image.new().resize_(batch,self.nclass,ph,pw).zero_().cuda()
+#                 count_norm = image.new().resize_(batch,1,ph,pw).zero_().cuda()
+#             # grid evaluation
+#             for idh in range(h_grids):
+#                 for idw in range(w_grids):
+#                     h0 = idh * stride
+#                     w0 = idw * stride
+#                     h1 = min(h0 + crop_size, ph)
+#                     w1 = min(w0 + crop_size, pw)
+#                     crop_img = crop_image(pad_img, h0, h1, w0, w1)
+#                     # pad if needed
+#                     pad_crop_img = pad_image(crop_img, self.module.mean,self.module.std, crop_size)
+#                     output = module_inference(self.module, pad_crop_img, self.flip)
+#                     outputs[:,:,h0:h1,w0:w1] += crop_image(output,0, h1-h0, 0, w1-w0)
+#                     count_norm[:,:,h0:h1,w0:w1] += 1
+#             assert((count_norm==0).sum()==0)
+#             outputs = outputs / count_norm
+#             outputs = outputs[:,:,:height,:width]
+
+#         score = resize_image(outputs, h, w, **self.module._up_kwargs)
+#         scores += score
+
+#         return scores
+
+class ChopEvalModule(DataParallel):
+    """Multi-size Segmentation Eavluator"""
+    def __init__(self, module, nclass, device_ids=None, flip=True):
+        super(ChopEvalModule, self).__init__(module, device_ids)
+        self.nclass = nclass
+        self.base_size = module.base_size
+        self.crop_size = module.crop_size
+        self.scales = [1.0]
+        self.flip = flip
+        print('ChopEvalModule: base_size {}, crop_size {}'. \
+            format(self.base_size, self.crop_size))
+
+    def parallel_forward(self, inputs, **kwargs):
+        """Multi-GPU Mult-size Evaluation
+
+        Args:
+            inputs: list of Tensors
+        """
+        inputs = [(input.unsqueeze(0).cuda(device),)
+                  for input, device in zip(inputs, self.device_ids)]
+        replicas = self.replicate(self, self.device_ids[:len(inputs)])
+        kwargs = scatter(kwargs, target_gpus, dim) if kwargs else []
+        if len(inputs) < len(kwargs):
+            inputs.extend([() for _ in range(len(kwargs) - len(inputs))])
+        elif len(kwargs) < len(inputs):
+            kwargs.extend([{} for _ in range(len(inputs) - len(kwargs))])
+        outputs = self.parallel_apply(replicas, inputs, kwargs)
+        return outputs
+
+    def forward(self, image):
+        """Mult-size Evaluation"""
+        # only single image is supported for evaluation
+        batch, _, h, w = image.size()
+        assert(batch == 1)
+        if len(self.scales) == 1:#single scale
+            stride_rate = 2.0/3.0
+            # stride_rate = 1.0/2.0
+        else:
+            stride_rate = 1.0/2.0
+        crop_size = self.crop_size
+        stride = int(crop_size * stride_rate)
+        with torch.cuda.device_of(image):
+            scores = image.new().resize_(batch,self.nclass,h,w).zero_().cuda()
+
+
+        long_size = max(h,w)
+        short_size = min(h,w)
+        # height,width = h,w
+        # cur_img = image
+
+        scale = 1.5
+        # for scale in [1.0,1.5]:
+        # for scale in [2.0]:
+        for scale in [2.0,3.0]:
+        # for scale in [1.0]:
+            height,width = int(h*scale),int(w*scale)
+            cur_img = resize_image(image, height, width, **self.module._up_kwargs)
+
+            if long_size <= crop_size:
+                pad_img = pad_image(cur_img, self.module.mean,
+                                    self.module.std, crop_size)
+                outputs = module_inference(self.module, pad_img, self.flip)
+                outputs = crop_image(outputs, 0, height, 0, width)
+            else:
+                if short_size < crop_size:
+                    # pad if needed
+                    pad_img = pad_image(cur_img, self.module.mean,
+                                        self.module.std, crop_size)
+                else:
+                    pad_img = cur_img
+                _,_,ph,pw = pad_img.size()
+
+                # grid forward and normalize
+                h_grids = int(math.ceil(1.0 * (ph-crop_size)/stride)) + 1
+                w_grids = int(math.ceil(1.0 * (pw-crop_size)/stride)) + 1
+                with torch.cuda.device_of(image):
+                    outputs = image.new().resize_(batch,self.nclass,ph,pw).zero_().cuda()
+                    count_norm = image.new().resize_(batch,1,ph,pw).zero_().cuda()
+                # grid evaluation
+                for idh in range(h_grids):
+                    for idw in range(w_grids):
+                        h0 = idh * stride
+                        w0 = idw * stride
+                        h1 = min(h0 + crop_size, ph)
+                        w1 = min(w0 + crop_size, pw)
+                        crop_img = crop_image(pad_img, h0, h1, w0, w1)
+                        # pad if needed
+                        pad_crop_img = pad_image(crop_img, self.module.mean,self.module.std, crop_size)
+                        output = module_inference(self.module, pad_crop_img, self.flip)
+                        outputs[:,:,h0:h1,w0:w1] += crop_image(output,0, h1-h0, 0, w1-w0)
+                        count_norm[:,:,h0:h1,w0:w1] += 1
+                assert((count_norm==0).sum()==0)
+                outputs = outputs / count_norm
+                outputs = outputs[:,:,:height,:width]
+
+            score = resize_image(outputs, h, w, **self.module._up_kwargs)
+            scores += score
+
+        return scores
+
 def module_inference(module, image, flip=True):
     output = module.evaluate(image)
     if flip:
         fimg = flip_image(image)
         foutput = module.evaluate(fimg)
         output += flip_image(foutput)
-    return output.exp()
+    # return output.exp()
+    return output
+
 
 def resize_image(img, h, w, **up_kwargs):
     return F.upsample(img, (h, w), **up_kwargs)

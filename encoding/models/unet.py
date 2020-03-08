@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from ..models import BaseNet
 import torchvision
 import pretrainedmodels
-
+import os 
 class Conv2dReLU(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, padding=0,
                  stride=1, use_batchnorm=True, **batchnorm_params):
@@ -1286,8 +1286,8 @@ class HCOCHeadUnet(BaseNet):
 class SCSEOCHeadUnet(BaseNet):
 
     def __init__(self,nclass, backbone, aux=False, se_loss=False, norm_layer=nn.BatchNorm2d, center=False,oc_arch='asp',
-                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,**kwargs):
-        super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, **kwargs)
+                 encoder_channels=None, decoder_channels=(256, 128, 64, 32, 16), use_batchnorm=True,is_dilated=False ,pretrained=True,**kwargs):
+        super(SCSEOCHeadUnet, self).__init__(nclass, backbone, aux, se_loss, norm_layer=norm_layer, pretrained=pretrained,**kwargs)
         # assert backbone in ['resnet101_ibn_a', 'resnext101_ibn_a','fbresnet152', 'bninception', 'resnext101_32x4d', 'resnext101_64x4d', 'inceptionv4', 'inceptionresnetv2', 'alexnet', 'densenet121', 'densenet169', 'densenet201', 'densenet161', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'inceptionv3', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn', 'vgg19_bn', 'vgg19', 'nasnetalarge', 'nasnetamobile', 'cafferesnet101', 'senet154',  'se_resnet50', 'se_resnet101', 'se_resnet152', 'se_resnext50_32x4d', 'se_resnext101_32x4d', 'cafferesnet101', 'polynet', 'pnasnet5large']
 
         self.is_dilated = is_dilated
@@ -1301,7 +1301,10 @@ class SCSEOCHeadUnet(BaseNet):
         self.oc_arch = oc_arch
 
         if backbone in ['resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet169', 'densenet201']:
-            self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+            print('build backbone with pretrain {}'.format(pretrained))
+            self.pretrained = eval('torchvision.models.{}'.format(backbone))(pretrained)
+            # self.pretrained = eval('torchvision.models.{}'.format(backbone))(True)
+            
         elif backbone in ['resnet50_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'atrous_resnet101',
                               'atrous_resnet50', 'atrous_resnet152']:
             print('skip.')
@@ -1637,7 +1640,7 @@ def get_unet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s'%(backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_scseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1685,7 +1688,7 @@ def get_scseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_hcscseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1733,7 +1736,7 @@ def get_hcscseunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_daheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1781,7 +1784,7 @@ def get_daheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_scsedaheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1829,7 +1832,7 @@ def get_scsedaheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=Fal
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_ocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1877,7 +1880,7 @@ def get_ocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_scseocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1918,14 +1921,21 @@ def get_scseocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=Fal
     # infer number of classes
     from ..datasets import datasets, VOCSegmentation, VOCAugSegmentation, ADE20KSegmentation
     model = SCSEOCHeadUnet(datasets[dataset.lower()].NUM_CLASS, backbone=backbone, root=root,
-                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,**kwargs)
+                 encoder_channels=encoder_channels_dict[backbone], oc_arch=oc_arch,is_dilated=is_dilated,pretrained=pretrained,**kwargs)
 
     if pretrained:
         from .model_store import get_model_file
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        # model.load_state_dict(torch.load(
+        #     # get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)
+        #     'pretrain_models/resnet101-5d3b4d8f.pth'
+        #     ),
+        #     strict=False)
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
+
+        
     return model
 
 def get_hcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -1973,7 +1983,7 @@ def get_hcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -2021,7 +2031,7 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=False,
@@ -2069,7 +2079,7 @@ def get_scsehcocheadunet(dataset='pascal_voc', backbone='resnet50', pretrained=F
         model.load_state_dict(torch.load(
             get_model_file('fcn_%s_%s' % (backbone, acronyms[dataset]), root=root)),
             strict=False)
-    print('loading {} imagenet pretrained weights done!'.format(backbone))
+        print('loading {} imagenet pretrained weights done!'.format(backbone))
     return model
 
 if __name__ == '__main__':

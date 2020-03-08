@@ -44,6 +44,10 @@ class Trainer():
             #                     [0.2272532905848313,0.18719978740803653,0.1592990354733096]) # for disease dataset
         ])
         # dataset
+        # data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
+        #                'crop_size': args.crop_size, 'logger': self.logger,
+        #                'scale': args.scale,
+        #                'root':'/data/Dataset/buildings/crop_data/'}
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
                        'crop_size': args.crop_size, 'logger': self.logger,
                        'scale': args.scale}
@@ -105,7 +109,9 @@ class Trainer():
                 self.model.module.load_state_dict(checkpoint['state_dict'], strict=False)
             else:
                 self.model.load_state_dict(checkpoint['state_dict'], strict=False)
-            self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            # self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            self.logger.info("=> loaded checkpoint '{}' ".format(args.ft_resume))
+
         # resuming checkpoint
         if args.resume:
             if not os.path.isfile(args.resume):

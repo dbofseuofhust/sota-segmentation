@@ -44,7 +44,8 @@ class Trainer():
         # dataset
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
                        'crop_size': args.crop_size, 'logger': self.logger,
-                       'scale': args.scale}
+                       'scale': args.scale,
+                       'root':'/data/Dataset/buildings/crop_data/'}
         trainset = get_segmentation_dataset(args.dataset, split='train', mode='train',
                                             **data_kwargs)
         testset = get_segmentation_dataset(args.dataset, split='val', mode='val',
@@ -90,7 +91,9 @@ class Trainer():
                 self.model.module.load_state_dict(checkpoint['state_dict'], strict=False)
             else:
                 self.model.load_state_dict(checkpoint['state_dict'], strict=False)
-            self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            # self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            self.logger.info("=> loaded checkpoint '{}' ".format(args.ft_resume))
+
         # resuming checkpoint
         if args.resume:
             if not os.path.isfile(args.resume):

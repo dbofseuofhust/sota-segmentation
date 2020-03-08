@@ -11,33 +11,46 @@
 #     MODEL.PRETRAIN_PATH "('${PRETRAIN}')"  \
 #     OUTPUT_DIR "('${SAVE_DIR}')"
 
-RESUME_FROM=cityscapes/deeplabv3_model/deeplabv3101/checkpoint.pth.tar
- CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
-                                    --model  deeplabv3 \
-                                    --backbone resnet101 \
-                                    --checkname deeplabv3101  \
-                                    --base-size 1024 \
-                                    --crop-size 768 \
-                                    --epochs 240 \
-                                    --batch-size 8 \
-                                    --lr 0.003 \
-                                    --workers 0 \
-                                    --multi-grid \
-                                    --multi-dilation 4 8 16 \
-                                    --ohem False \
-                                    --resume ${RESUME_FROM}
+# RESUME_FROM=cityscapes/deeplabv3_model/deeplabv3101/checkpoint.pth.tar
+#  CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
+#                                     --model  deeplabv3 \
+#                                     --backbone resnet101 \
+#                                     --checkname deeplabv3101  \
+#                                     --base-size 1024 \
+#                                     --crop-size 768 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.003 \
+#                                     --workers 0 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --ohem False \
+#                                     --resume ${RESUME_FROM}
 
-# CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset cityscapes \
-#                                    --model  deeplabv3plus \
-#                                    --backbone resnet101 \
-#                                    --checkname deeplabv3plus101  \
-#                                    --base-size 1024 \
-#                                    --crop-size 768 \
-#                                    --epochs 240 \
-#                                    --batch-size 8 \
-#                                    --lr 0.003 \
-#                                    --workers 0 \
-#                                    --multi-grid \
-#                                    --multi-dilation 4 8 16 \
-#                                    --ohem False
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python deeplabv3/train.py --dataset buildings2 \
+#                                     --model  deeplabv3 \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-deeplabv3_101-b1024-c1024-ms  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.003 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
 
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python deeplabv3/train.py --dataset buildings2 \
+#                                     --model  deeplabv3plus \
+#                                     --backbone atrous_resnet101 \
+#                                     --checkname buildings2-deeplabv3plus_101-b1024-c1024-ms  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.003 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+
+                                    

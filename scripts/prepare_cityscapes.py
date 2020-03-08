@@ -3,7 +3,7 @@ import numpy as np
 
 split = ['train','val']
 
-root = r'/data/deeplearning/cityscapes'
+root = r'/data/Dataset/cityscapes'
 rawimgroot = os.path.join(root,'leftImg8bit')
 maskimgroot = os.path.join(root,'gtFine')
 
@@ -17,6 +17,7 @@ for v in split:
             # aachen_000002_000019_leftImg8bit.png, aachen_000000_000019_gtFine_labelTrainIds.png
             imginfos.append(os.path.join('leftImg8bit', v, u, w))
             maskinfos.append(os.path.join('gtFine', v, u, w.replace('leftImg8bit', 'gtFine_labelTrainIds')))
+            # maskinfos.append(os.path.join('gtFine', v, u, w.replace('leftImg8bit', 'gtFine_labelIds')))
     with open(os.path.join('datasets/cityscapes',"{}_fine.txt").format(v),'w') as f:
         for img, mask in zip(imginfos, maskinfos):
             f.writelines("{}	{}".format(img,mask)+'\n')

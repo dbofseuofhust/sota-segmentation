@@ -142,6 +142,12 @@ class Options():
                             help="multi grid dilation list")
         parser.add_argument('--scale', action='store_false', default=True,
                            help='choose to use random scale transform(0.75-2),default:multi scale')
+
+        # dice loss
+        parser.add_argument('--dice-weight', type=float, default=0.01,
+                            metavar='M', help=' weight of dice loss')
+        parser.add_argument('--fl-gamma', type=float, default=1.5,
+                                    help='fl-gamma')                                                  
         # the parser
         self.parser = parser
 

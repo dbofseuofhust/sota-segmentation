@@ -421,9 +421,13 @@ def resnet101(pretrained=False, root='./pretrain_models', **kwargs):
     #Remove the following lines of comments
     #if u want to train from a pretrained model
     if pretrained:
-       from ..models.model_store import get_model_file
-       model.load_state_dict(torch.load(
-           get_model_file('resnet101', root=root)), strict=False)
+        from ..models.model_store import get_model_file
+    #    model.load_state_dict(torch.load(
+    #        get_model_file('resnet101', root=root)), strict=False)
+        print('test...')
+        model.load_state_dict(torch.load('pretrain_models/resnet101-5d3b4d8f.pth'))
+    
+
     return model
 
 def resnet101_ibn_a(pretrained=False, root='./pretrain_models', **kwargs):

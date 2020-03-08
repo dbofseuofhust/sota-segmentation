@@ -435,7 +435,7 @@ def test(args):
                 # mask = Image.fromarray(predict.squeeze().astype('uint8'))
 
                 # for norm outputs
-                _root,_impath = impath.split('*')
+                _root, _impath = impath.split('*')
                 impath = _impath.replace(_root+'/','')
                 outname = os.path.splitext(impath)[0] + '.png'
                 mask = predict.squeeze().astype('uint8')
@@ -515,7 +515,7 @@ if __name__ == "__main__":
 
     args = Options().parse()
     args.model = 'hcocheadunet'
-    args.resume_dir = 'monusac/hcocheadunet_model/exp8-ocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt'
+    args.resume_dir = 'monusac/hcocheadunet_model/exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt'
     args.base_size = 1024
     args.crop_size = 896
     args.workers = 4

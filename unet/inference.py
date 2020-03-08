@@ -96,9 +96,11 @@ def test(args):
                         for output in outputs]
             for predict, impath in zip(predicts, im_paths):
                 # for vis 
-                # mask = utils.get_mask_pallete(predict, args.dataset)
+                mask = utils.get_mask_pallete(predict, args.dataset)
+
                 # for submit
-                mask = Image.fromarray(predict.squeeze().astype('uint8'))
+                # mask = Image.fromarray(predict.squeeze().astype('uint8'))
+
                 # scale into original shape
                 outname = os.path.splitext(impath)[0] + '.png'
                 mask.save(os.path.join(outdir, outname))

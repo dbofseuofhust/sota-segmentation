@@ -21,13 +21,13 @@ from .base import BaseDataset
 class CityscapesSegmentation(BaseDataset):
     BASE_DIR = 'cityscapes'
     NUM_CLASS = 19
-    def __init__(self, root='/data/deeplearning', split='train',
+    def __init__(self, root='/data/Dataset/', split='train',
                  mode=None, transform=None, target_transform=None, **kwargs):
         super(CityscapesSegmentation, self).__init__(
             root, split, mode, transform, target_transform, **kwargs)
         # assert exists
         root = os.path.join(root, self.BASE_DIR)
-        assert os.path.exists(root), "Please download the dataset!!"
+        assert os.path.exists(root), "Please download the dataset!! into {}".format(root)
 
         self.images, self.masks = _get_cityscapes_pairs(root, split)
         if split != 'vis':

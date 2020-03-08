@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
-
 class OhemCrossEntropy2dTensor(nn.Module):
     def __init__(self, ignore_label, reduction='elementwise_mean', thresh=0.6, min_kept=256,
                  down_ratio=1, use_weight=False):

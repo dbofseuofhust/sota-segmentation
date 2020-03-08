@@ -61,14 +61,28 @@ requirements = [
     'cffi>=1.0.0',
 ]
 
+# requirements = [
+#     'numpy',
+#     'tqdm',
+#     'nose',
+#     'torch>=0.4.0',
+#     'Pillow',
+#     'scipy',
+#     'requests',
+# ]
+
 requirements = [
     'numpy',
     'tqdm',
     'nose',
-    'torch>=0.4.0',
+    'torch==0.4.1',
+    'torchvision==0.2.0',
     'Pillow',
     'scipy',
     'requests',
+    'pretrainedmodels',
+    'albumentations',
+    'tifffile'
 ]
 
 setup(

@@ -3044,22 +3044,355 @@
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
 
-DATASET=monusac
-CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
-                                   --model  hcocheadunet \
-                                   --backbone resnet101 \
-                                   --checkname exp9-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
-                                   --base-size 1024 \
-                                   --crop-size 896 \
-                                   --epochs 240 \
-                                   --batch-size 8 \
-                                   --lr 0.02 \
-                                   --workers 8 \
-                                   --multi-grid \
-                                   --multi-dilation 4 8 16 \
-                                   --warmup True \
-                                   --warmup-epoch 10 \
-                                   --mutil-steps 80,140 \
-                                   --warmup-factor 0.1 \
-                                   --warmup-method linear \
-                                   --log-root ${DATASET}
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp9-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp8-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt-gsblur  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+# DATASET=monusac
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                    --model  hcocheadunet \
+#                                    --backbone resnet101 \
+#                                    --checkname exp9-hcocheadunet_resnet101-warmup10-lr002-seprs-bsize1024-csize896-cj-allrt-affine  \
+#                                    --base-size 1024 \
+#                                    --crop-size 896 \
+#                                    --epochs 240 \
+#                                    --batch-size 8 \
+#                                    --lr 0.02 \
+#                                    --workers 8 \
+#                                    --multi-grid \
+#                                    --multi-dilation 4 8 16 \
+#                                    --warmup True \
+#                                    --warmup-epoch 10 \
+#                                    --mutil-steps 80,140 \
+#                                    --warmup-factor 0.1 \
+#                                    --warmup-method linear \
+#                                    --log-root ${DATASET}
+
+DATASET=buildings2
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python unet/train.py --dataset buildings2 \
+#                                     --model psp \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-psp_101-b1024-c1024-ms  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 
+                                    # --warmup True \
+                                    # --warmup-epoch 10 \
+                                    # --mutil-steps 80,140 \
+                                    # --warmup-factor 0.1 \
+                                    # --warmup-method linear \
+                                    # --log-root ${DATASET}
+
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  hcocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-hcocheadunet_101-b1024-c1024-ms  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --warmup True \
+#                                     --warmup-epoch 10 \
+#                                     --mutil-steps 80,140 \
+#                                     --warmup-factor 0.1 \
+#                                     --warmup-method linear \
+#                                     --log-root ${DATASET}
+
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  hcocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-hcocheadunet_101-b1024-c1024-ms-poly  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 
+
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c1024-ms-poly  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16                                     
+
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseunet_101-b1024-c1024-ms-poly  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16                                     
+                                  
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/buildings/train.py --dataset buildings2 \
+#                                     --model  danet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --ft \
+#                                     --ft-resume pretrain_models/DANet101.pth.tar.2   
+
+
+# DATASET=cityscapes
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname cityscapes-scseocheadunet_101-b1024-c768-ms-poly  \
+#                                     --base-size 1024 \
+#                                     --crop-size 768 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16  \
+#                                     --resume   cityscapes/scseocheadunet_model/cityscapes-scseocheadunet_101-b1024-c768-ms-poly/model_best.pth.tar
+
+
+                                  
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/buildings/train_dice.py --dataset buildings2 \
+#                                     --model  danet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02-dice001  \
+#                                     --base-size 1024 \
+#                                     --crop-size 768 \
+#                                     --epochs 60 \
+#                                     --batch-size 8 \
+#                                     --lr 0.002 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --dice-weight 0.01 \
+#                                     --ft \
+#                                     --ft-resume buildings2/danet_model/buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02/model_best.pth.tar   
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/buildings/train_dice.py --dataset buildings2 \
+#                                     --model  danet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02-dice05  \
+#                                     --base-size 1024 \
+#                                     --crop-size 768 \
+#                                     --epochs 60 \
+#                                     --batch-size 8 \
+#                                     --lr 0.002 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --dice-weight 0.5 \
+#                                     --ft \
+#                                     --ft-resume buildings2/danet_model/buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02/model_best.pth.tar   
+
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python scripts/buildings/train_dice.py --dataset buildings2 \
+#                                     --model  danet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02-dice  \
+#                                     --base-size 1024 \
+#                                     --crop-size 768 \
+#                                     --epochs 60 \
+#                                     --batch-size 8 \
+#                                     --lr 0.002 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --dice-weight 1.0 \
+#                                     --ft \
+#                                     --ft-resume buildings2/danet_model/buildings2-danet101-b1024-c1024-ft-ms-rt10-lr02/model_best.pth.tar   
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train_dice.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c1024-ms-poly-dice001  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 60 \
+#                                     --batch-size 8 \
+#                                     --lr 0.002 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16  \
+#                                     --dice-weight 0.01 \
+#                                     --ft \
+#                                     --ft-resume buildings2/scseocheadunet_model/buildings2-scseocheadunet_101-b1024-c1024-ms-poly/model_best.pth.tar
+
+
+
+# DATASET=buildings2
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c768-ms-poly-trainval  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16  
+
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b2048-c1024-ms-poly  \
+#                                     --base-size 2048 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16                                     
+
+
+
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train_fl.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c1024-ms-poly-fl  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16                                     
+
+
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c1024-ms-poly-ft  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 \
+#                                     --ft \
+#                                     --ft-resume cityscapes/scseocheadunet_model/cityscapes-scseocheadunet_101-b1024-c768-ms-poly/model_best.pth.tar.2   
+# DATASET=buildings2
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b1024-c1024-ms-poly-overlap_trainval  \
+#                                     --base-size 1024 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16  
+
+# DATASET=buildings2
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b2048-c1024-ms-poly-overlap_trainval  \
+#                                     --base-size 2048 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16  
+
+
+# DATASET=buildings2
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+#                                     --model  scseocheadunet \
+#                                     --backbone resnet101 \
+#                                     --checkname buildings2-scseocheadunet_101-b2048-c1024-ms-poly-trainval  \
+#                                     --base-size 2048 \
+#                                     --crop-size 1024 \
+#                                     --epochs 240 \
+#                                     --batch-size 8 \
+#                                     --lr 0.02 \
+#                                     --workers 2 \
+#                                     --multi-grid \
+#                                     --multi-dilation 4 8 16 
+CUDA_VISIBLE_DEVICES=4,5,6,7 python galdnet/train.py --dataset ${DATASET} \
+                                    --model  scseocheadunet \
+                                    --backbone resnet101 \
+                                    --checkname debug  \
+                                    --base-size 1024 \
+                                    --crop-size 1024 \
+                                    --epochs 240 \
+                                    --batch-size 8 \
+                                    --lr 0.02 \
+                                    --workers 2 \
+                                    --multi-grid \
+                                    --multi-dilation 4 8 16     

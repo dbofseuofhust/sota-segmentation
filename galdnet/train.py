@@ -42,11 +42,20 @@ class Trainer():
             transform.ToTensor(),
             transform.Normalize([.485, .456, .406], [.229, .224, .225])])
         # dataset
+        # data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
+        #                'crop_size': args.crop_size, 'logger': self.logger,
+        #                'scale': args.scale,
+        #                'root':'/data/Dataset/buildings/overlapcrop_data/'}
+        # trainset = get_segmentation_dataset(args.dataset, split='overlap_trainval', mode='train',
+        #                                     **data_kwargs)               
         data_kwargs = {'transform': input_transform, 'base_size': args.base_size,
                        'crop_size': args.crop_size, 'logger': self.logger,
                        'scale': args.scale}
-        trainset = get_segmentation_dataset(args.dataset, split='train', mode='train',
+        # trainset = get_segmentation_dataset(args.dataset, split='train', mode='train',
+        #                                     **data_kwargs)
+        trainset = get_segmentation_dataset(args.dataset, split='trainval', mode='train',
                                             **data_kwargs)
+        
         testset = get_segmentation_dataset(args.dataset, split='val', mode='val',
                                            **data_kwargs)
         # dataloader
@@ -104,7 +113,9 @@ class Trainer():
                 self.model.module.load_state_dict(checkpoint['state_dict'], strict=False)
             else:
                 self.model.load_state_dict(checkpoint['state_dict'], strict=False)
-            self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            # self.logger.info("=> loaded checkpoint '{}' (epoch {})".format(args.ft_resume, checkpoint['epoch']))
+            self.logger.info("=> loaded checkpoint '{}' ".format(args.ft_resume))
+
         # resuming checkpoint
         if args.resume:
             if not os.path.isfile(args.resume):

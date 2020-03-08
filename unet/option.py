@@ -119,6 +119,9 @@ class Options():
                             help="multi grid dilation list")
         parser.add_argument('--scale', action='store_false', default=True,
                            help='choose to use random scale transform(0.75-2),default:multi scale')
+        # dice loss
+        parser.add_argument('--dice-weight', type=float, default=0.01,
+                            metavar='M', help=' weight of dice loss')                   
         # the parser
         self.parser = parser
 
