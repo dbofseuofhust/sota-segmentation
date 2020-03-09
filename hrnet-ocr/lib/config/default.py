@@ -62,6 +62,8 @@ _C.DATASET.TRAIN_SET = 'list/cityscapes/train.lst'
 _C.DATASET.EXTRA_TRAIN_SET = ''
 _C.DATASET.TEST_SET = 'list/cityscapes/val.lst'
 
+_C.DATASET.X2 = False
+
 # training
 _C.TRAIN = CN()
 

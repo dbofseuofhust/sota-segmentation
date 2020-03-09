@@ -10,17 +10,18 @@ PRINT_FREQ: 10
 
 DATASET:
   DATASET: buildings
-  ROOT: /data/Dataset/buildings/buildings_testA/
-  # ROOT: /data/Dataset/buildings/crop_data/
+  # ROOT: /data/Dataset/buildings/buildings_testA/
+  ROOT: /data/Dataset/buildings/crop_data/
   TEST_SET: '/list/buildings/val.lst'
   # TRAIN_SET: '/list/buildings/train.lst'
   TRAIN_SET: '/list/buildings/trainval.lst'
   NUM_CLASSES: 2
+  X2: false
 MODEL:
   NAME: seg_hrnet_ocr
   NUM_OUTPUTS: 2
-  PRETRAINED: "/data/model_checkpoint_pytorch/hrnetv2_w48_imagenet_pretrained.pth"
-  # PRETRAINED: "/data/model_checkpoint_pytorch/hrnet_ocr_cs_8162_torch11_2.pth"
+  # PRETRAINED: "/data/model_checkpoint_pytorch/hrnetv2_w48_imagenet_pretrained.pth"
+  PRETRAINED: "/data/model_checkpoint_pytorch/hrnet_ocr_cs_8162_torch11_2.pth"
   EXTRA:
     FINAL_CONV_KERNEL: 1
     STAGE1:

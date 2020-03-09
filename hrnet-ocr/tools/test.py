@@ -106,7 +106,8 @@ def main():
                         ignore_label=config.TRAIN.IGNORE_LABEL,
                         base_size=config.TEST.BASE_SIZE,
                         crop_size=test_size,
-                        downsample_rate=1)
+                        downsample_rate=1,
+                        x2=config.DATASET.X2)
 
     testloader = torch.utils.data.DataLoader(
         test_dataset,

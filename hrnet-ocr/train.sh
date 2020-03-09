@@ -47,7 +47,9 @@
 #                                    --warmup-method linear \
 #                                    --log-root ${DATASET}
 
-python -m torch.distributed.launch --nproc_per_node=4 tools/train.py --cfg experiments/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml
+# python -m torch.distributed.launch --nproc_per_node=4 tools/train.py --cfg experiments/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml
+
+CUDA_VISIBLE_DEVICES=4,5,6,7 python -m torch.distributed.launch --nproc_per_node=4 tools/train.py --cfg experiments/buildings/seg_hrnet_ocr_w48_trainval_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml
 
 
 

@@ -29,7 +29,8 @@ class Buildings(BaseDataset):
                  downsample_rate=1,
                  scale_factor=16,
                  mean=[0.485, 0.456, 0.406], 
-                 std=[0.229, 0.224, 0.225]):
+                 std=[0.229, 0.224, 0.225],
+                 x2=False):
 
         super(Buildings, self).__init__(ignore_label, base_size,
                 crop_size, downsample_rate, scale_factor, mean, std,)
@@ -41,13 +42,17 @@ class Buildings(BaseDataset):
         self.multi_scale = multi_scale
         self.flip = flip
         
-        self.img_list = [line.strip().split() for line in open(list_path)]
+        self.img_list = [line.strip().split() for line in open(list_path)] # for test 128/139 server
+        # self.img_list = [line.strip().split() for line in open(root+list_path)] # for train 128/139 server
 
         self.files = self.read_files()
         if num_samples:
             self.files = self.files[:num_samples]
 
         self.label_mapping = {0: 0, 1: 1}
+
+        # new added
+        self.x2 = x2
 
         # self.class_weights = torch.FloatTensor([1.0,1.0]).cuda()
     
@@ -88,6 +93,13 @@ class Buildings(BaseDataset):
         name = item["name"]
         image = cv2.imread(os.path.join(self.root,item["img"]),
                            cv2.IMREAD_COLOR)
+
+        h, w, c = image.shape
+
+        # for x2
+        if self.x2:
+            image = cv2.resize(image, (2*w, 2*h),interpolation=cv2.INTER_LINEAR)
+
         size = image.shape
 
         if 'test' in self.list_path:
@@ -99,6 +111,10 @@ class Buildings(BaseDataset):
         label = cv2.imread(os.path.join(self.root,item["label"]),
                            cv2.IMREAD_GRAYSCALE)
         label = self.convert_label(label)
+
+        # for x2
+        if self.x2:
+            label = cv2.resize(label, (2*w, 2*h),interpolation=cv2.INTER_NEAREST)
 
         image, label = self.gen_sample(image, label, 
                                 self.multi_scale, self.flip)
@@ -182,6 +198,12 @@ class Buildings(BaseDataset):
         for i in range(preds.shape[0]):
             pred = self.convert_label(preds[i], inverse=True)
             save_img = Image.fromarray(pred)
+
+            # for x2 pred 
+            if self.x2:
+                w, h = save_img.size
+                save_img = save_img.resize((int(w/2), int(h/2)), Image.NEAREST)
+
             save_img.putpalette(palette)
             save_img.save(os.path.join(sv_path, name[i]+'.png'))
 

@@ -246,8 +246,28 @@
 #                      TEST.SCALE_LIST 0.5,0.75,1.0,1.25,1.5,1.75 \
 #                      TEST.FLIP_TEST True
 
-python tools/test.py --cfg experiments/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml \
+# python tools/test.py --cfg experiments/buildings/seg_hrnet_ocr_w48_trainval_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml \
+#                      DATASET.TEST_SET data/list/buildings/test.lst \
+#                      TEST.MODEL_FILE /data/db/ead-segmentation/hrnet-ocr/output/buildings/seg_hrnet_ocr_w48_trainval_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484/best.pth \
+#                      TEST.SCALE_LIST 0.5,0.75,1.0,1.25,1.5,1.75 \
+#                      TEST.FLIP_TEST True
+
+# for x2 dataset
+CUDA_VISIBLE_DEVICES=0,1,2,3 python tools/test.py --cfg experiments/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml \
                      DATASET.TEST_SET data/list/buildings/test.lst \
+                     DATASET.X2 True \
+                     TRAIN.IMAGE_SIZE '([1024,1024])' \
+                     TRAIN.BASE_SIZE '(2048)' \
+                     TEST.IMAGE_SIZE '([1024,1024])' \
+                     TEST.BASE_SIZE '(1024)' \
+                     DATASET.ROOT /data/Dataset/buildings/buildings_testA/ \
                      TEST.MODEL_FILE /data/db/ead-segmentation/hrnet-ocr/output/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484/best.pth \
                      TEST.SCALE_LIST 0.5,0.75,1.0,1.25,1.5,1.75 \
                      TEST.FLIP_TEST True
+
+# CUDA_VISIBLE_DEVICES=0,1,2,3 python tools/test.py --cfg experiments/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484.yaml \
+#                      DATASET.TEST_SET data/list/buildings/test.lst \
+#                      DATASET.ROOT /data/Dataset/buildings/buildings_testA/ \
+#                      TEST.MODEL_FILE /data/db/ead-segmentation/hrnet-ocr/output/buildings/seg_hrnet_ocr_w48_train_512x1024_sgd_lr1e-2_wd5e-4_bs_12_epoch484/best.pth \
+#                      TEST.SCALE_LIST 0.5,0.75,1.0,1.25,1.5,1.75 \
+#                      TEST.FLIP_TEST True

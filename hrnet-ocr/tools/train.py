@@ -129,7 +129,8 @@ def main():
                         base_size=config.TRAIN.BASE_SIZE,
                         crop_size=crop_size,
                         downsample_rate=config.TRAIN.DOWNSAMPLERATE,
-                        scale_factor=config.TRAIN.SCALE_FACTOR)
+                        scale_factor=config.TRAIN.SCALE_FACTOR,
+                        x2=config.DATASET.X2)
 
     train_sampler = get_sampler(train_dataset)
     trainloader = torch.utils.data.DataLoader(
@@ -154,7 +155,8 @@ def main():
                     base_size=config.TRAIN.BASE_SIZE,
                     crop_size=crop_size,
                     downsample_rate=config.TRAIN.DOWNSAMPLERATE,
-                    scale_factor=config.TRAIN.SCALE_FACTOR)
+                    scale_factor=config.TRAIN.SCALE_FACTOR,
+                    x2=config.DATASET.X2)
         extra_train_sampler = get_sampler(extra_train_dataset)
         extra_trainloader = torch.utils.data.DataLoader(
             extra_train_dataset,
@@ -179,7 +181,8 @@ def main():
                         ignore_label=config.TRAIN.IGNORE_LABEL,
                         base_size=config.TEST.BASE_SIZE,
                         crop_size=test_size,
-                        downsample_rate=1)
+                        downsample_rate=1,
+                        x2=config.DATASET.X2)
 
     test_sampler = get_sampler(test_dataset)
     testloader = torch.utils.data.DataLoader(
