@@ -213,130 +213,131 @@ def test(config, test_dataset, testloader, model,
             image, size, name = batch
             size = size[0]
 
-            num_classes = 2
-            # grid evaluation
-            h, w, c = size
-            crop_size = 1024
-            # pad img into the size that can be divided by crop_size
-            cell_h, cell_w = int(h/(crop_size/2)+1), int(w/(crop_size/2)+1)
-            ch, cw = cell_h*int(crop_size/2), cell_w*int(crop_size/2)
-            docker = np.zeros((1,num_classes,ch,cw))
-            docker = torch.from_numpy(docker).float()
+            if config.MODEL.GRID_EVALUATION:
+                # num_classes = 2 # default
+                num_classes = config.DATASET.NUM_CLASSES
+                # grid evaluation
+                h, w, c = size
+                # crop_size = 1024 # default
+                crop_size = config.TEST.BASE_SIZE
+                # pad img into the size that can be divided by crop_size
+                cell_h, cell_w = int(h/(crop_size/2)+1), int(w/(crop_size/2)+1)
+                ch, cw = cell_h*int(crop_size/2), cell_w*int(crop_size/2)
+                docker = np.zeros((1,num_classes,ch,cw))
+                docker = torch.from_numpy(docker).float()
 
-            padw , padh = cw-w, ch-h
-            image = F.pad(image[:,:,:,:], (0, padw, 0, padh), value=0)
+                padw , padh = cw-w, ch-h
+                image = F.pad(image[:,:,:,:], (0, padw, 0, padh), value=0)
 
-            print(size,cell_h,cell_w,image.size())
+                for j in range(cell_h):
+                    for i in range(cell_w):
+                        center_x, center_y = (i+1)*crop_size/2-crop_size/4, (j+1)*crop_size/2-crop_size/4
+                        patch = np.zeros((1,c,crop_size,crop_size))
 
-            for j in range(cell_h):
-                for i in range(cell_w):
-                    center_x, center_y = (i+1)*crop_size/2-crop_size/4, (j+1)*crop_size/2-crop_size/4
-                    patch = np.zeros((1,c,crop_size,crop_size))
-
-                    if i == 0:
-                        if j == 0:
-                            top_left_x = 0
-                            top_left_y = 0
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,int(crop_size/4):,int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                        elif j == cell_h-1:
-                            top_left_x = center_x-crop_size/4
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/4
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:int(3*crop_size/4),int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                        if i == 0:
+                            if j == 0:
+                                top_left_x = 0
+                                top_left_y = 0
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,int(crop_size/4):,int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            elif j == cell_h-1:
+                                top_left_x = center_x-crop_size/4
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/4
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:int(3*crop_size/4),int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            else:
+                                top_left_x = center_x-crop_size/4
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:,int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                        elif i == cell_w - 1:
+                            if j == 0:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/4
+                                bottom_right_x = center_x+crop_size/4
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,int(crop_size/4):,:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            elif j == cell_h-1:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/4
+                                bottom_right_y = center_y+crop_size/4
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:int(3*crop_size/4),:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            else:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/4
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:,:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
                         else:
-                            top_left_x = center_x-crop_size/4
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:,int(crop_size/4):] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                    elif i == cell_w - 1:
-                        if j == 0:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/4
-                            bottom_right_x = center_x+crop_size/4
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,int(crop_size/4):,:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                        elif j == cell_h-1:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/4
-                            bottom_right_y = center_y+crop_size/4
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:int(3*crop_size/4),:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                        else:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/4
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:,:int(3*crop_size/4)] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                    else:
-                        if j == 0:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/4
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,int(crop_size/4):,:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                        elif j == cell_h-1:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/4
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:int(3*crop_size/4),:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
-                        else:
-                            top_left_x = center_x-crop_size/2
-                            top_left_y = center_y-crop_size/2
-                            bottom_right_x = center_x+crop_size/2
-                            bottom_right_y = center_y+crop_size/2
-                            top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
-                            patch[:,:,:,:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            if j == 0:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/4
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,int(crop_size/4):,:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            elif j == cell_h-1:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/4
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:int(3*crop_size/4),:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
+                            else:
+                                top_left_x = center_x-crop_size/2
+                                top_left_y = center_y-crop_size/2
+                                bottom_right_x = center_x+crop_size/2
+                                bottom_right_y = center_y+crop_size/2
+                                top_left_y, bottom_right_y, top_left_x, bottom_right_x = int(top_left_y), int(bottom_right_y), int(top_left_x), int(bottom_right_x)
+                                patch[:,:,:,:] = image[:,:,top_left_y:bottom_right_y,top_left_x:bottom_right_x]
 
-                    patch = torch.from_numpy(patch).float()
-                    pred = test_dataset.multi_scale_inference(
-                        config,
-                        model,
-                        patch,
-                        scales=config.TEST.SCALE_LIST,
-                        flip=config.TEST.FLIP_TEST)
+                        patch = torch.from_numpy(patch).float()
+                        pred = test_dataset.multi_scale_inference(
+                            config,
+                            model,
+                            patch,
+                            scales=config.TEST.SCALE_LIST,
+                            flip=config.TEST.FLIP_TEST)
 
-                    if pred.size()[-2] != crop_size or pred.size()[-1] != crop_size:
-                        pred = F.interpolate(
-                            pred, (crop_size, crop_size),
-                            mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS
-                        )
-                    
-                    docker[:,:,int(center_y-crop_size/4):int(center_y+crop_size/4),int(center_x-crop_size/4):int(center_x+crop_size/4)] = pred[:,:,int(crop_size/4):int(3*crop_size/4),int(crop_size/4):int(3*crop_size/4)]
+                        if pred.size()[-2] != crop_size or pred.size()[-1] != crop_size:
+                            pred = F.interpolate(
+                                pred, (crop_size, crop_size),
+                                mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS
+                            )
+                        
+                        docker[:,:,int(center_y-crop_size/4):int(center_y+crop_size/4),int(center_x-crop_size/4):int(center_x+crop_size/4)] = pred[:,:,int(crop_size/4):int(3*crop_size/4),int(crop_size/4):int(3*crop_size/4)]
 
-            if sv_pred:
-                sv_path = os.path.join(sv_dir, 'test_results')
-                if not os.path.exists(sv_path):
-                    os.mkdir(sv_path)
-                test_dataset.save_pred(docker[:,:,:h,:w], sv_path, name)
+                if sv_pred:
+                    sv_path = os.path.join(sv_dir, 'test_results')
+                    if not os.path.exists(sv_path):
+                        os.mkdir(sv_path)
+                    test_dataset.save_pred(docker[:,:,:h,:w], sv_path, name)
+            else:
+                pred = test_dataset.multi_scale_inference(
+                    config,
+                    model,
+                    image,
+                    scales=config.TEST.SCALE_LIST,
+                    flip=config.TEST.FLIP_TEST)
 
-            # pred = test_dataset.multi_scale_inference(
-            #     config,
-            #     model,
-            #     image,
-            #     scales=config.TEST.SCALE_LIST,
-            #     flip=config.TEST.FLIP_TEST)
+                if pred.size()[-2] != size[0] or pred.size()[-1] != size[1]:
+                    pred = F.interpolate(
+                        pred, size[-2:],
+                        mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS
+                    )
 
-            # if pred.size()[-2] != size[0] or pred.size()[-1] != size[1]:
-            #     pred = F.interpolate(
-            #         pred, size[-2:],
-            #         mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS
-            #     )
-
-            # if sv_pred:
-            #     sv_path = os.path.join(sv_dir, 'test_results')
-            #     if not os.path.exists(sv_path):
-            #         os.mkdir(sv_path)
-            #     test_dataset.save_pred(pred, sv_path, name)
+                if sv_pred:
+                    sv_path = os.path.join(sv_dir, 'test_results')
+                    if not os.path.exists(sv_path):
+                        os.mkdir(sv_path)
+                    test_dataset.save_pred(pred, sv_path, name)
