@@ -1,93 +1,97 @@
-# [Dual Attention Network for Scene Segmentation(CVPR2019)](https://arxiv.org/pdf/1809.02983.pdf)
-[Jun Fu](https://github.com/junfu1115/), [Jing Liu](http://www.nlpr.ia.ac.cn/iva/liujing/index.html), [Haijie Tian](https://github.com/tianhaijie), [Yong Li](http://www.foreverlee.net), Yongjun Bao, Zhiwei Fang,and Hanqing Lu 
+<div align="center">
+  <img src="resources/mmseg-logo.png" width="600"/>
+</div>
+<br />
+
+[![PyPI](https://img.shields.io/pypi/v/mmsegmentation)](https://pypi.org/project/mmsegmentation)
+[![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmsegmentation.readthedocs.io/en/latest/)
+[![badge](https://github.com/open-mmlab/mmsegmentation/workflows/build/badge.svg)](https://github.com/open-mmlab/mmsegmentation/actions)
+[![codecov](https://codecov.io/gh/open-mmlab/mmsegmentation/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmsegmentation)
+[![license](https://img.shields.io/github/license/open-mmlab/mmsegmentation.svg)](https://github.com/open-mmlab/mmsegmentation/blob/master/LICENSE)
+
+Documentation: https://mmsegmentation.readthedocs.io/
+
 ## Introduction
 
-We propose a Dual Attention Network (DANet) to adaptively integrate local features with their global dependencies based on the self-attention mechanism. And we achieve new state-of-the-art segmentation performance on three challenging scene segmentation datasets, i.e., Cityscapes, PASCAL Context and COCO Stuff-10k dataset.
+MMSegmentation is an open source semantic segmentation toolbox based on PyTorch.
+It is a part of the OpenMMLab project.
 
-![image](img/overview.png)
+The master branch works with **PyTorch 1.3 to 1.5**.
 
-## Cityscapes testing set result
+![demo image](resources/seg_demo.gif)
 
-We train our DANet-101 with only fine annotated data and submit our test results to the official evaluation server.
+### Major features
 
-![image](img/tab3.png)
+- **Unified Benchmark**
 
-## Usage
+  We provide a unified benchmark toolbox for various semantic segmentation methods.
 
-1. Install pytorch 
+- **Modular Design**
 
-  - The code is tested on python3.6 and official [Pytorch@commitfd25a2a](https://github.com/pytorch/pytorch/tree/fd25a2a86c6afa93c7062781d013ad5f41e0504b#from-source), please install PyTorch from source.
-  - The code is modified from [PyTorch-Encoding](https://github.com/zhanghang1989/PyTorch-Encoding). 
-  
-2. Clone the repository:
+  We decompose the semantic segmentation framework into different components and one can easily construct a customized semantic segmentation framework by combining different modules.
 
-   ```shell
-   git clone https://github.com/junfu1115/DANet.git 
-   cd DANet 
-   python setup.py install
-   ```
-   
-3. Dataset
+- **Support of multiple methods out of box**
 
-  - Download the [Cityscapes](https://www.cityscapes-dataset.com/) dataset and convert the dataset to [19 categories](https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py). 
-  - Please put dataset in folder `./datasets`
+  The toolbox directly supports popular and contemporary semantic segmentation frameworks, *e.g.* PSPNet, DeepLabV3, PSANet, DeepLabV3+, etc.
 
-4 . Evaluation
+- **High efficiency**
 
-  - Download trained model [DANet101](https://drive.google.com/open?id=1XmpFEF-tbPH0Rmv4eKRxYJngr3pTbj6p) and put it in folder `./danet/cityscapes/model`
-  - Evaluation code is in folder `./danet/cityscapes`
-  - `cd danet`
+  The training speed is faster than or comparable to other codebases.
 
-  - For single scale testing, please run:
-  
-   ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 python test.py --dataset cityscapes --model danet --resume-dir cityscapes/model --base-size 2048 --crop-size 768 --workers 1 --backbone resnet101 --multi-grid --multi-dilation 4 8 16 --eval
-   ```
-   
-  - For multi-scale testing, please run:
-  
-   ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 python test.py --dataset cityscapes --model danet --resume-dir cityscapes/model --base-size 2048 --crop-size 1024 --workers 1 --backbone resnet101 --multi-grid --multi-dilation 4 8 16 --eval --multi-scales
-   ```  
-   
-  - If you want to visualize the result of DAN-101, you can run:
- 
-   ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 python test.py --dataset cityscapes --model danet --resume-dir cityscapes/model --base-size 2048 --crop-size 768 --workers 1 --backbone resnet101 --multi-grid --multi-dilation 4 8 16
-   ```
-   
-5. Evaluation Result:
+## License
 
-   The expected scores will show as follows:
-   
-   (single scale testing denotes as 'ss' and multiple scale testing denotes as 'ms')
-   
-   DANet101 on cityscapes val set (mIoU/pAcc): **79.93/95.97** (ss) and **81.49/96.41** (ms)
+This project is released under the [Apache 2.0 license](LICENSE).
 
+## Changelog
 
-6. Training:
+v0.5.1 was released in 11/08/2020.
+Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
-  - Training code is in folder `./danet/cityscapes`
-  - `cd danet`
-  
-   You can reproduce our result by run:
+## Benchmark and model zoo
 
-  ```shell
-   CUDA_VISIBLE_DEVICES=0,1,2,3 python train.py --dataset cityscapes --model  danet --backbone resnet101 --checkname danet101  --base-size 1024 --crop-size 768 --epochs 240 --batch-size 8 --lr 0.003 --workers 2 --multi-grid --multi-dilation 4 8 16
-   ```
- 
-   Note that: We adopt multiple losses in end of the network for better training. 
-   
+Results and models are available in the [model zoo](docs/model_zoo.md).
 
-## Citation
-If DANet is useful for your research, please consider citing:
-```
-@article{fu2018dual,
-  title={Dual Attention Network for Scene Segmentation},
-  author={Jun Fu, Jing Liu, Haijie Tian, Yong Li, Yongjun Bao, Zhiwei Fang,and Hanqing Lu},
-  booktitle={The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year={2019}
-}
-```
+Supported backbones:
+- [x] ResNet
+- [x] ResNeXt
+- [x] [HRNet](configs/hrnet/README.md)
+- [x] [ResNeSt](configs/resnest/README.md)
+
+Supported methods:
+- [x] [FCN](configs/fcn)
+- [x] [PSPNet](configs/pspnet)
+- [x] [DeepLabV3](configs/deeplabv3)
+- [x] [PSANet](configs/psanet)
+- [x] [DeepLabV3+](configs/deeplabv3plus)
+- [x] [UPerNet](configs/upernet)
+- [x] [NonLocal Net](configs/nonlocal_net)
+- [x] [EncNet](configs/encnet)
+- [x] [CCNet](configs/ccnet)
+- [x] [DANet](configs/danet)
+- [x] [GCNet](configs/gcnet)
+- [x] [ANN](configs/ann)
+- [x] [OCRNet](configs/ocrnet)
+- [x] [Fast-SCNN](configs/fastscnn)
+- [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
+
+## Installation
+
+Please refer to [INSTALL.md](docs/install.md) for installation and dataset preparation.
+
+## Get Started
+
+Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMSegmentation.
+There are also tutorials for [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+
+A Colab tutorial is also provided. You may preview the notebook [here](demo/MMSegmentation_Tutorial.ipynb) or directly [run](https://colab.research.google.com/github/open-mmlab/mmsegmentation/blob/master/demo/MMSegmentation_Tutorial.ipynb) on Colab.
+
+## Contributing
+
+We appreciate all contributions to improve MMSegmentation. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
+
 ## Acknowledgement
-Thanks [PyTorch-Encoding](https://github.com/zhanghang1989/PyTorch-Encoding), especially the Synchronized BN!
+
+MMSegmentation is an open source project that welcome any contribution and feedback.
+We wish that the toolbox and benchmark could serve the growing research
+community by providing a flexible as well as standardized toolkit to reimplement existing methods
+and develop their own new semantic segmentation methods.
